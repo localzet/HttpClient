@@ -1,0 +1,32 @@
+{
+    "name": "localzet/http",
+    "description": "localzet HTTP Client",
+    "type": "library",
+    "keywords": [
+        "localzet"
+    ],
+    "license": "GPL-3.0-only",
+    "authors": [{
+        "name": "localzet",
+        "email": "creator@localzet.ru",
+        "homepage": "https://www.localzet.ru",
+        "role": "Developer"
+    }],
+    "support": {
+        "email": "support@localzet.ru",
+        "docs": "https://localzet.gitbook.io"
+    },
+    "funding": [{
+        "type": "other",
+        "url": "https://www.tinkoff.ru/cf/Ad5MBNhodod"
+    }],
+    "require": {
+        "localzet/psr": ">=1.0.0",
+        "localzet/core": ">=1.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "localzet\\HTTP\\": "src/"
+        }
+    }
+}
