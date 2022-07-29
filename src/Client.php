@@ -41,7 +41,7 @@ class Client
     protected $_queue = array();
 
     /**
-     * @var ConnectionPool
+     * @var array
      */
     protected $_connectionPool = null;
 
