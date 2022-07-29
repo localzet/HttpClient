@@ -167,7 +167,7 @@ class ConnectionPool extends Emitter
                     $diff = $time - $connection->pool['connect_time'];
                     if ($diff >= $connect_timeout) {
                         if ($connection->onError) {
-                            call_user_func($connection->onError, $connection, V3_CONNECT_FAIL, 'connect ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
+                            call_user_func($connection->onError, $connection, WEBCORE_CONNECT_FAIL, 'connect ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
                         }
                         $this->delete($connection);
                         $connection->close();
