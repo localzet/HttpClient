@@ -244,7 +244,7 @@ class Request extends PSR_Request
         $query = isset($this->_options['query']) ? $this->_options['query'] : '';
         if ($query || $query === '0') {
             if (is_array($query)) {
-                $query = http_build_query($query, "", '&', PHP_QUERY_RFC3986);
+                $query = http_build_query($query, null, '&', PHP_QUERY_RFC3986);
             }
             $uri = $this->getUri()->withQuery($query);
             $this->withUri($uri);
@@ -339,10 +339,8 @@ class Request extends PSR_Request
     {
         $status_code = $this->_response->getStatusCode();
         $content_length = $this->_response->getHeaderLine('Content-Length');
-        if (
-            $content_length === '0' || ($status_code >= 100 && $status_code < 200)
-            || $status_code === 204 || $status_code === 304
-        ) {
+        if ($content_length === '0' || ($status_code >= 100 && $status_code < 200)
+            || $status_code === 204 || $status_code === 304) {
             $this->emitSuccess();
             return;
         }
@@ -466,8 +464,7 @@ class Request extends PSR_Request
      */
     public static function redirect($request, $response)
     {
-        if (
-            substr($response->getStatusCode(), 0, 1) != '3'
+        if (substr($response->getStatusCode(), 0, 1) != '3'
             || !$response->hasHeader('Location')
         ) {
             return false;
@@ -562,7 +559,7 @@ class Request extends PSR_Request
     {
         $connection = $this->_connection;
         $connection->onConnect = $connection->onMessage = $connection->onError =
-            $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
+        $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
         $this->_connection = null;
         $this->_emitter->removeAllListeners();
     }
