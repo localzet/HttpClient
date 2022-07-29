@@ -88,7 +88,7 @@ class Request extends PSR_Request
     {
         $this->_emitter = new Emitter();
         $headers = [
-            'User-Agent' => 'workerman/http-client',
+            'User-Agent' => 'localzet/http',
             'Connection' => 'keep-alive'
         ];
         parent::__construct('GET', $url, $headers, '', '1.1');
@@ -528,7 +528,7 @@ class Request extends PSR_Request
     }
 
     /**
-     * @return \Workerman\Connection\AsyncTcpConnection
+     * @return \localzet\Core\Connection\AsyncTcpConnection
      */
     public function getConnection()
     {
@@ -538,7 +538,7 @@ class Request extends PSR_Request
     /**
      * attachConnection.
      *
-     * @param $connection \Workerman\Connection\AsyncTcpConnection
+     * @param $connection \localzet\Core\Connection\AsyncTcpConnection
      * @return $this
      */
     public function attachConnection($connection)
