@@ -1,7 +1,6 @@
 <?php
-
 /**
- * @package     localzet HTTP Client
+ * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
  * 
  * @author      localzet <creator@localzet.ru>
@@ -11,13 +10,7 @@
  * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-
-namespace localzet\HTTP;
-
-/**
- * Class HTTP\Emitter
- * @package localzet\HTTP
- */
+namespace localzet\Core\Http;
 class Emitter
 {
     /**
@@ -61,16 +54,20 @@ class Emitter
      */
     public function removeListener($event_name, $listener)
     {
-        if (!isset($this->_eventListenerMap[$event_name])) {
+        if(!isset($this->_eventListenerMap[$event_name]))
+        {
             return $this;
         }
-        foreach ($this->_eventListenerMap[$event_name] as $key => $item) {
-            if ($item[0] === $listener) {
+        foreach($this->_eventListenerMap[$event_name] as $key=>$item)
+        {
+            if($item[0] === $listener)
+            {
                 $this->emit('removeListener', $event_name, $listener);
                 unset($this->_eventListenerMap[$event_name][$key]);
             }
         }
-        if (empty($this->_eventListenerMap[$event_name])) {
+        if(empty($this->_eventListenerMap[$event_name]))
+        {
             unset($this->_eventListenerMap[$event_name]);
         }
         return $this;
@@ -85,7 +82,8 @@ class Emitter
     public function removeAllListeners($event_name = null)
     {
         $this->emit('removeListener', $event_name);
-        if (null === $event_name) {
+        if(null === $event_name)
+        {
             $this->_eventListenerMap = array();
             return $this;
         }
@@ -102,11 +100,13 @@ class Emitter
      */
     public function listeners($event_name)
     {
-        if (empty($this->_eventListenerMap[$event_name])) {
+        if(empty($this->_eventListenerMap[$event_name]))
+        {
             return array();
         }
         $listeners = array();
-        foreach ($this->_eventListenerMap[$event_name] as $item) {
+        foreach($this->_eventListenerMap[$event_name] as $item)
+        {
             $listeners[] = $item[0];
         }
         return $listeners;
@@ -120,21 +120,26 @@ class Emitter
      */
     public function emit($event_name = null)
     {
-        if (empty($event_name) || empty($this->_eventListenerMap[$event_name])) {
+        if(empty($event_name) || empty($this->_eventListenerMap[$event_name]))
+        {
             return false;
         }
-        foreach ($this->_eventListenerMap[$event_name] as $key => $item) {
-            $args = func_get_args();
-            unset($args[0]);
-            call_user_func_array($item[0], $args);
-            // once ?
-            if ($item[1]) {
-                unset($this->_eventListenerMap[$event_name][$key]);
-                if (empty($this->_eventListenerMap[$event_name])) {
-                    unset($this->_eventListenerMap[$event_name]);
-                }
-            }
+        foreach($this->_eventListenerMap[$event_name] as $key=>$item)
+        {
+             $args = func_get_args();
+             unset($args[0]);
+             call_user_func_array($item[0], $args);
+             // once ?
+             if($item[1])
+             {
+                 unset($this->_eventListenerMap[$event_name][$key]);
+                 if(empty($this->_eventListenerMap[$event_name]))
+                 {
+                     unset($this->_eventListenerMap[$event_name]);
+                 }
+             }
         }
         return true;
     }
+
 }

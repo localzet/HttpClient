@@ -1,7 +1,6 @@
 <?php
-
 /**
- * @package     localzet HTTP Client
+ * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
  * 
  * @author      localzet <creator@localzet.ru>
@@ -11,15 +10,13 @@
  * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-
-namespace localzet\HTTP;
-
-use localzet\PSR\PSR7\Response as PSR_Response;
+namespace localzet\Core\Http;
 
 /**
- * Class HTTP\Response
- * @package localzet\HTTP
+ * Class Response
+ * @package localzet\Core\Http
  */
-class Response extends PSR_Response
+class Response extends \localzet\Core\Psr7\Response
 {
+
 }

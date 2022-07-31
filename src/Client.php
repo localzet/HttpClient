@@ -1,7 +1,6 @@
 <?php
-
 /**
- * @package     localzet HTTP Client
+ * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
  * 
  * @author      localzet <creator@localzet.ru>
@@ -11,13 +10,12 @@
  * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-
-namespace localzet\HTTP;
+namespace localzet\Core\Http;
 
 
 /**
- * Class HTTP\Client
- * @package localzet\HTTP
+ * Class Http\Client
+ * @package localzet\Core\Http
  */
 class Client
 {
@@ -164,7 +162,7 @@ class Client
         $request->setOptions($options)->attachConnection($connection);
 
         $client = $this;
-        $request->on('success', function ($response) use ($task, $client, $request) {
+        $request->on('success', function($response) use ($task, $client, $request) {
             $client->recycleConnectionFromRequest($request, $response);
             try {
                 $new_request = Request::redirect($request, $response);
@@ -194,7 +192,7 @@ class Client
             ];
             $this->queueUnshift($address, $task);
             $this->process($address);
-        })->on('error', function ($exception) use ($task, $client, $request) {
+        })->on('error', function($exception) use ($task, $client, $request) {
             $client->recycleConnectionFromRequest($request);
             if (!empty($task['options']['error'])) {
                 call_user_func($task['options']['error'], $exception);

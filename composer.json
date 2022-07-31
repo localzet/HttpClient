@@ -1,6 +1,6 @@
 {
     "name": "localzet/http",
-    "description": "localzet HTTP Client",
+    "description": "WebCore HTTP Client",
     "type": "library",
     "keywords": [
         "localzet"
@@ -26,7 +26,7 @@
     },
     "autoload": {
         "psr-4": {
-            "localzet\\HTTP\\": "src/"
+            "localzet\\Core\\Http": "src/"
         }
     }
 }

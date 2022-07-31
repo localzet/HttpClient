@@ -1,7 +1,6 @@
 <?php
-
 /**
- * @package     localzet HTTP Client
+ * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
  * 
  * @author      localzet <creator@localzet.ru>
@@ -11,15 +10,14 @@
  * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-
-namespace localzet\HTTP;
+namespace localzet\Core\Http;
 
 use \localzet\Core\Connection\AsyncTcpConnection;
 use \localzet\Core\Timer;
 
 /**
- * Class HTTP\ConnectionPool
- * @package localzet\HTTP
+ * Class ConnectionPool
+ * @package localzet\Core\Http
  */
 class ConnectionPool extends Emitter
 {
@@ -104,7 +102,7 @@ class ConnectionPool extends Emitter
             $this->_idle[$address][$connection_id] = $connection;
             $connection->pool['idle_time'] = time();
             $connection->onConnect = $connection->onMessage = $connection->onError =
-                $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
+            $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
         }
         $this->tryToCreateConnectionCheckTimer();
         $this->emit('idle', $address);
@@ -203,7 +201,7 @@ class ConnectionPool extends Emitter
                 'allow_self_signed' => true
             )
         );
-        if (!empty($this->_options['context'])) {
+        if (!empty( $this->_options['context'])) {
             $context = $this->_options['context'];
         }
         if (!$ssl) {

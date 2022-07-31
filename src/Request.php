@@ -1,7 +1,6 @@
 <?php
-
 /**
- * @package     localzet HTTP Client
+ * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
  * 
  * @author      localzet <creator@localzet.ru>
@@ -11,20 +10,17 @@
  * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-
-namespace localzet\HTTP;
+namespace localzet\Core\Http;
 
 use \localzet\Core\Connection\AsyncTcpConnection;
 use \localzet\Core\Timer;
-use localzet\PSR\PSR7\Uri;
-use localzet\PSR\PSR7\UriResolver;
-use localzet\PSR\PSR7\Request as PSR_Request;
+use localzet\Core\Psr7\Uri;
 
 /**
- * Class HTTP\Request
- * @package localzet\HTTP
+ * Class Request
+ * @package localzet\Core\Http
  */
-class Request extends PSR_Request
+class Request extends \localzet\Core\Psr7\Request
 {
     /**
      * @var AsyncTcpConnection
@@ -88,7 +84,7 @@ class Request extends PSR_Request
     {
         $this->_emitter = new Emitter();
         $headers = [
-            'User-Agent' => 'localzet/http',
+            'User-Agent' => 'WebCore HTTP Client',
             'Connection' => 'keep-alive'
         ];
         parent::__construct('GET', $url, $headers, '', '1.1');
@@ -174,7 +170,7 @@ class Request extends PSR_Request
             $port = $this->getDefaultPort();
         }
         $context = array();
-        if (!empty($this->_options['context'])) {
+        if (!empty( $this->_options['context'])) {
             $context = $this->_options['context'];
         }
         $ssl = $this->getUri()->getScheme() === 'https';
@@ -286,7 +282,7 @@ class Request extends PSR_Request
             $this->withHeaders(['Content-Length' => $body_size]);
         }
 
-        $package = \localzet\PSR\PSR7\str($this);
+        $package = \localzet\Core\Psr7\str($this);
         $this->_connection->send($package);
     }
 
@@ -311,7 +307,7 @@ class Request extends PSR_Request
                 return;
             }
 
-            $response_data = \localzet\PSR\PSR7\_parse_message($this->_recvBuffer);
+            $response_data = \localzet\Core\Psr7\_parse_message($this->_recvBuffer);
 
             if (!preg_match('/^HTTP\/.* [0-9]{3}( .*|$)/', $response_data['start-line'])) {
                 throw new \InvalidArgumentException('Invalid response string: ' . $response_data['start-line']);
@@ -471,11 +467,11 @@ class Request extends PSR_Request
         }
         $options = $request->getOptions();
         self::guardMax($options);
-        $location = UriResolver::resolve(
+        $location = \localzet\Core\Psr7\UriResolver::resolve(
             $request->getUri(),
-            new Uri($response->getHeaderLine('Location'))
+            new \localzet\Core\Psr7\Uri($response->getHeaderLine('Location'))
         );
-        \localzet\PSR\PSR7\rewind_body($request);
+        \localzet\Core\Psr7\rewind_body($request);
 
         $new_request = (new Request($location))->setOptions($options)->withBody($request->getBody());
 
