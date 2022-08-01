@@ -21,7 +21,7 @@
         "url": "https://www.tinkoff.ru/cf/Ad5MBNhodod"
     }],
     "require": {
-        "localzet/psr": ">=1.0.0",
+        "localzet/psr7": ">=1.0.0",
         "localzet/core": ">=1.0.0"
     },
     "autoload": {
