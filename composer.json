@@ -26,7 +26,7 @@
     },
     "autoload": {
         "psr-4": {
-            "localzet\\Core\\Http": "src/"
+            "localzet\\Core\\Http\\": "src/"
         }
     }
 }
