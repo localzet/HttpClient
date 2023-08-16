@@ -2,21 +2,25 @@
 /**
  * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
- * 
+ *
  * @author      localzet <creator@localzet.ru>
- * 
- * @copyright   Copyright (c) 2018-2020 Zorin Projects 
+ *
+ * @copyright   Copyright (c) 2018-2020 Zorin Projects
  * @copyright   Copyright (c) 2020-2022 NONA Team
- * 
+ *
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-namespace localzet\Core\Http;
+
+namespace localzet\HTTP;
+
+use AllowDynamicProperties;
 
 /**
  * Class Response
- * @package localzet\Core\Http
+ * @package localzet\HTTP
  */
-class Response extends \localzet\Core\Psr7\Response
+#[AllowDynamicProperties]
+class Response extends \localzet\PSR7\Response
 {
 
 }

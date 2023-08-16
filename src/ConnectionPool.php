@@ -2,22 +2,26 @@
 /**
  * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
- * 
+ *
  * @author      localzet <creator@localzet.ru>
- * 
- * @copyright   Copyright (c) 2018-2020 Zorin Projects 
+ *
+ * @copyright   Copyright (c) 2018-2020 Zorin Projects
  * @copyright   Copyright (c) 2020-2022 NONA Team
- * 
+ *
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-namespace localzet\Core\Http;
 
-use \localzet\Core\Connection\AsyncTcpConnection;
-use \localzet\Core\Timer;
+namespace localzet\HTTP;
+
+use Exception;
+use localzet\Server;
+use localzet\Server\Connection\AsyncTcpConnection;
+use localzet\Timer;
+use Throwable;
 
 /**
  * Class ConnectionPool
- * @package localzet\Core\Http
+ * @package localzet\HTTP
  */
 class ConnectionPool extends Emitter
 {
@@ -42,8 +46,8 @@ class ConnectionPool extends Emitter
     protected $_options = [
         'max_conn_per_addr' => 128,
         'keepalive_timeout' => 15,
-        'connect_timeout'   => 30,
-        'timeout'           => 30,
+        'connect_timeout' => 30,
+        'timeout' => 30,
     ];
 
     /**
@@ -51,7 +55,7 @@ class ConnectionPool extends Emitter
      *
      * @param array $option
      */
-    public function __construct($option = [])
+    public function __construct(array $option = [])
     {
         $this->_options = array_merge($this->_options, $option);
     }
@@ -62,8 +66,9 @@ class ConnectionPool extends Emitter
      * @param $address
      * @param bool $ssl
      * @return mixed
+     * @throws Throwable
      */
-    public function fetch($address, $ssl = false)
+    public function fetch($address, bool $ssl = false)
     {
         $max_con = $this->_options['max_conn_per_addr'];
         if (!empty($this->_using[$address])) {
@@ -90,7 +95,7 @@ class ConnectionPool extends Emitter
      *
      * @param $connection AsyncTcpConnection
      */
-    public function recycle($connection)
+    public function recycle(AsyncTcpConnection $connection): void
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -113,7 +118,7 @@ class ConnectionPool extends Emitter
      *
      * @param $connection
      */
-    public function delete($connection)
+    public function delete($connection): void
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -129,8 +134,10 @@ class ConnectionPool extends Emitter
 
     /**
      * Close timeout connection.
+     * @throws Throwable
+     * @throws Throwable
      */
-    public function closeTimeoutConnection()
+    public function closeTimeoutConnection(): void
     {
         if (empty($this->_idle) && empty($this->_using)) {
             Timer::del($this->_timer);
@@ -164,8 +171,15 @@ class ConnectionPool extends Emitter
                 if ($state === 'CONNECTING') {
                     $diff = $time - $connection->pool['connect_time'];
                     if ($diff >= $connect_timeout) {
+                        $connection->onClose = null;
                         if ($connection->onError) {
-                            call_user_func($connection->onError, $connection, WEBCORE_CONNECT_FAIL, 'connect ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
+                            try {
+                                call_user_func($connection->onError, $connection, 1, 'connect ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
+                            } catch (Throwable $exception) {
+                                $this->delete($connection);
+                                $connection->close();
+                                throw $exception;
+                            }
                         }
                         $this->delete($connection);
                         $connection->close();
@@ -174,7 +188,13 @@ class ConnectionPool extends Emitter
                     $diff = $time - $connection->pool['request_time'];
                     if ($diff >= $timeout) {
                         if ($connection->onError) {
-                            call_user_func($connection->onError, $connection, 128, 'read ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
+                            try {
+                                call_user_func($connection->onError, $connection, 128, 'read ' . $connection->getRemoteAddress() . ' timeout after ' . $diff . ' seconds');
+                            } catch (Throwable $exception) {
+                                $this->delete($connection);
+                                $connection->close();
+                                throw $exception;
+                            }
                         }
                         $this->delete($connection);
                         $connection->close();
@@ -191,21 +211,29 @@ class ConnectionPool extends Emitter
      * @param $address
      * @param bool $ssl
      * @return AsyncTcpConnection
+     * @throws Throwable
+     * @throws Throwable
+     * @throws Throwable
+     * @throws Exception
+     * @throws Exception
      */
-    protected function create($address, $ssl = false)
+    protected function create($address, bool $ssl = false): AsyncTcpConnection
     {
         $context = array(
             'ssl' => array(
                 'verify_peer' => false,
-                'verify_peer_name'  => false,
+                'verify_peer_name' => false,
                 'allow_self_signed' => true
             )
         );
-        if (!empty( $this->_options['context'])) {
+        if (!empty($this->_options['context'])) {
             $context = $this->_options['context'];
         }
         if (!$ssl) {
             unset($context['ssl']);
+        }
+        if (!class_exists(Server::class) || is_null(Server::$globalEvent)) {
+            throw new Exception('Only the Localzet Server environment is supported.');
         }
         $connection = new AsyncTcpConnection($address, $context);
         if ($ssl) {
@@ -220,7 +248,7 @@ class ConnectionPool extends Emitter
     /**
      * Create Timer.
      */
-    protected function tryToCreateConnectionCheckTimer()
+    protected function tryToCreateConnectionCheckTimer(): void
     {
         if (!$this->_timer) {
             $this->_timer = Timer::add(1, [$this, 'closeTimeoutConnection']);

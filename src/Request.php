@@ -2,25 +2,35 @@
 /**
  * @package     WebCore HTTP Client
  * @link        https://localzet.gitbook.io
- * 
+ *
  * @author      localzet <creator@localzet.ru>
- * 
- * @copyright   Copyright (c) 2018-2020 Zorin Projects 
+ *
+ * @copyright   Copyright (c) 2018-2020 Zorin Projects
  * @copyright   Copyright (c) 2020-2022 NONA Team
- * 
+ *
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
-namespace localzet\Core\Http;
 
-use \localzet\Core\Connection\AsyncTcpConnection;
-use \localzet\Core\Timer;
-use localzet\Core\Psr7\Uri;
+namespace localzet\HTTP;
+
+use AllowDynamicProperties;
+use Exception;
+use InvalidArgumentException;
+use localzet\PSR\Http\Message\MessageInterface;
+use localzet\PSR7\Uri;
+use localzet\PSR7\UriResolver;
+use localzet\Server\Connection\AsyncTcpConnection;
+use Throwable;
+use function localzet\PSR7\_parse_message;
+use function localzet\PSR7\rewind_body;
+use function localzet\PSR7\str;
 
 /**
  * Class Request
- * @package localzet\Core\Http
+ * @package localzet\HTTP
  */
-class Request extends \localzet\Core\Psr7\Request
+#[AllowDynamicProperties]
+class Request extends \localzet\PSR7\Request
 {
     /**
      * @var AsyncTcpConnection
@@ -80,14 +90,14 @@ class Request extends \localzet\Core\Psr7\Request
      * Request constructor.
      * @param string $url
      */
-    public function __construct($url)
+    public function __construct(string $url)
     {
         $this->_emitter = new Emitter();
         $headers = [
-            'User-Agent' => 'WebCore HTTP Client',
+            'User-Agent' => 'Localzet HTTP Client',
             'Connection' => 'keep-alive'
         ];
-        parent::__construct('GET', $url, $headers, '', '1.1');
+        parent::__construct('GET', $url, $headers, '');
     }
 
     /**
@@ -161,6 +171,8 @@ class Request extends \localzet\Core\Psr7\Request
 
     /**
      * Connect.
+     * @throws Throwable
+     * @throws Exception
      */
     protected function connect()
     {
@@ -170,7 +182,7 @@ class Request extends \localzet\Core\Psr7\Request
             $port = $this->getDefaultPort();
         }
         $context = array();
-        if (!empty( $this->_options['context'])) {
+        if (!empty($this->_options['context'])) {
             $context = $this->_options['context'];
         }
         $ssl = $this->getUri()->getScheme() === 'https';
@@ -189,11 +201,12 @@ class Request extends \localzet\Core\Psr7\Request
     /**
      * @param string $data
      * @return $this
+     * @throws Throwable
      */
-    public function write($data = '')
+    public function write(string $data = '')
     {
         if (!$this->writeable()) {
-            $this->emitError(new \Exception('Request pending and can not send request again'));
+            $this->emitError(new Exception('Request pending and can not send request again'));
             return $this;
         }
 
@@ -211,9 +224,9 @@ class Request extends \localzet\Core\Psr7\Request
 
     /**
      * @param string $data
-     * @throws \Exception
+     * @throws Throwable
      */
-    public function end($data = '')
+    public function end(string $data = '')
     {
         if (($data || $data === '0' || $data === 0) || $this->getBody()->getSize()) {
             if (isset($this->_options['headers'])) {
@@ -237,10 +250,10 @@ class Request extends \localzet\Core\Psr7\Request
             $this->withHeaders($this->_options['headers']);
         }
 
-        $query = isset($this->_options['query']) ? $this->_options['query'] : '';
+        $query = $this->_options['query'] ?? '';
         if ($query || $query === '0') {
             if (is_array($query)) {
-                $query = http_build_query($query, null, '&', PHP_QUERY_RFC3986);
+                $query = http_build_query($query, '', '&', PHP_QUERY_RFC3986);
             }
             $uri = $this->getUri()->withQuery($query);
             $this->withUri($uri);
@@ -268,10 +281,13 @@ class Request extends \localzet\Core\Psr7\Request
         return $this->_writeable;
     }
 
+    /**
+     * @throws Throwable
+     */
     public function doSend()
     {
         if (!$this->writeable()) {
-            $this->emitError(new \Exception('Request pending and can not send request again'));
+            $this->emitError(new Exception('Request pending and can not send request again'));
             return;
         }
 
@@ -282,15 +298,18 @@ class Request extends \localzet\Core\Psr7\Request
             $this->withHeaders(['Content-Length' => $body_size]);
         }
 
-        $package = \localzet\Core\Psr7\str($this);
+        $package = str($this);
         $this->_connection->send($package);
     }
 
-    public function onConnect()
+    /**
+     * @throws Throwable
+     */
+    public function onConnect(): void
     {
         try {
             $this->doSend();
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             $this->emitError($e);
         }
     }
@@ -298,6 +317,7 @@ class Request extends \localzet\Core\Psr7\Request
     /**
      * @param $connection
      * @param $recv_buffer
+     * @throws Throwable
      */
     public function onMessage($connection, $recv_buffer)
     {
@@ -307,10 +327,10 @@ class Request extends \localzet\Core\Psr7\Request
                 return;
             }
 
-            $response_data = \localzet\Core\Psr7\_parse_message($this->_recvBuffer);
+            $response_data = _parse_message($this->_recvBuffer);
 
             if (!preg_match('/^HTTP\/.* [0-9]{3}( .*|$)/', $response_data['start-line'])) {
-                throw new \InvalidArgumentException('Invalid response string: ' . $response_data['start-line']);
+                throw new InvalidArgumentException('Invalid response string: ' . $response_data['start-line']);
             }
             $parts = explode(' ', $response_data['start-line'], 3);
 
@@ -319,17 +339,18 @@ class Request extends \localzet\Core\Psr7\Request
                 $response_data['headers'],
                 '',
                 explode('/', $parts[0])[1],
-                isset($parts[2]) ? $parts[2] : null
+                $parts[2] ?? null
             );
 
             $this->checkComplete($response_data['body']);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->emitError($e);
         }
     }
 
     /**
      * @param $body
+     * @throws Throwable
      */
     protected function checkComplete($body)
     {
@@ -343,7 +364,7 @@ class Request extends \localzet\Core\Psr7\Request
 
         $transfer_encoding = $this->_response->getHeaderLine('Transfer-Encoding');
         // Chunked
-        if ($transfer_encoding && false === strpos($transfer_encoding, 'identity')) {
+        if ($transfer_encoding && !str_contains($transfer_encoding, 'identity')) {
             $this->_connection->onMessage = array($this, 'handleChunkedData');
             $this->handleChunkedData($this->_connection, $body);
         } else {
@@ -362,6 +383,7 @@ class Request extends \localzet\Core\Psr7\Request
     /**
      * @param $connection
      * @param $data
+     * @throws Throwable
      */
     public function handleData($connection, $data)
     {
@@ -374,7 +396,7 @@ class Request extends \localzet\Core\Psr7\Request
                     $this->emitSuccess();
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->emitError($e);
         }
     }
@@ -382,6 +404,7 @@ class Request extends \localzet\Core\Psr7\Request
     /**
      * @param $connection
      * @param $buffer
+     * @throws Throwable
      */
     public function handleChunkedData($connection, $buffer)
     {
@@ -398,7 +421,7 @@ class Request extends \localzet\Core\Psr7\Request
             if ($this->_chunkedLength === 0) {
                 $crlf_position = strpos($this->_chunkedData, "\r\n");
                 if ($crlf_position === false && strlen($this->_chunkedData) > 1024) {
-                    $this->emitError(new \Exception('bad chunked length'));
+                    $this->emitError(new Exception('bad chunked length'));
                     return;
                 }
 
@@ -406,7 +429,7 @@ class Request extends \localzet\Core\Psr7\Request
                     return;
                 }
                 $length_chunk = substr($this->_chunkedData, 0, $crlf_position);
-                if (strpos($crlf_position, ';') !== false) {
+                if (str_contains($crlf_position, ';')) {
                     list($length_chunk) = explode(';', $length_chunk, 2);
                 }
                 $length = hexdec(ltrim(trim($length_chunk), "0"));
@@ -426,17 +449,18 @@ class Request extends \localzet\Core\Psr7\Request
                 $this->_chunkedLength = 0;
                 $this->handleChunkedData($connection, '');
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->emitError($e);
         }
     }
 
     /**
      * onError.
+     * @throws Throwable
      */
     public function onError($connection, $code, $msg)
     {
-        $this->emitError(new \Exception("connection error code:$code $msg"));
+        $this->emitError(new Exception($msg, $code));
     }
 
     /**
@@ -447,56 +471,65 @@ class Request extends \localzet\Core\Psr7\Request
         $this->emit('success', $this->_response);
     }
 
+    /**
+     * @throws Throwable
+     */
     public function emitError($e)
     {
-        $this->_connection && $this->_connection->destroy();
-        $this->emit('error', $e);
+        try {
+            $this->emit('error', $e);
+        } finally {
+            $this->_connection && $this->_connection->destroy();
+        }
     }
 
     /**
      * @param $request Request
      * @param $response Response
-     * @return $this|bool
+     * @return false|MessageInterface
+     * @throws Exception
+     * @throws Exception
+     * @throws Exception
      */
-    public static function redirect($request, $response)
+    public static function redirect(Request $request, Response $response)
     {
-        if (substr($response->getStatusCode(), 0, 1) != '3'
+        if (!str_starts_with($response->getStatusCode(), '3')
             || !$response->hasHeader('Location')
         ) {
             return false;
         }
         $options = $request->getOptions();
         self::guardMax($options);
-        $location = \localzet\Core\Psr7\UriResolver::resolve(
+        $location = UriResolver::resolve(
             $request->getUri(),
-            new \localzet\Core\Psr7\Uri($response->getHeaderLine('Location'))
+            new Uri($response->getHeaderLine('Location'))
         );
-        \localzet\Core\Psr7\rewind_body($request);
+        rewind_body($request);
 
-        $new_request = (new Request($location))->setOptions($options)->withBody($request->getBody());
-
-        return $new_request;
+        return (new Request($location))->setOptions($options)->withBody($request->getBody());
     }
 
+    /**
+     * @throws Exception
+     */
     private static function guardMax(array &$options)
     {
-        $current = isset($options['__redirect_count'])
-            ? $options['__redirect_count']
-            : 0;
+        $current = $options['__redirect_count'] ?? 0;
         $options['__redirect_count'] = $current + 1;
         $max = $options['allow_redirects']['max'];
 
         if ($options['__redirect_count'] > $max) {
-            throw new \Exception("Too many redirects. will not follow more than {$max} redirects");
+            throw new Exception("Too many redirects. will not follow more than $max redirects");
         }
     }
 
     /**
      * onUnexpectClose.
+     * @throws Throwable
      */
     public function onUnexpectClose()
     {
-        $this->emitError(new \Exception('Connection closed'));
+        $this->emitError(new Exception('Connection closed'));
     }
 
     /**
@@ -511,6 +544,9 @@ class Request extends \localzet\Core\Psr7\Request
      * detachConnection.
      *
      * @return void
+     * @throws Throwable
+     * @throws Throwable
+     * @throws Throwable
      */
     public function detachConnection()
     {
@@ -524,7 +560,7 @@ class Request extends \localzet\Core\Psr7\Request
     }
 
     /**
-     * @return \localzet\Core\Connection\AsyncTcpConnection
+     * @return AsyncTcpConnection|null
      */
     public function getConnection()
     {
@@ -534,15 +570,15 @@ class Request extends \localzet\Core\Psr7\Request
     /**
      * attachConnection.
      *
-     * @param $connection \localzet\Core\Connection\AsyncTcpConnection
+     * @param $connection AsyncTcpConnection
      * @return $this
      */
-    public function attachConnection($connection)
+    public function attachConnection(AsyncTcpConnection $connection): static
     {
         $connection->onConnect = array($this, 'onConnect');
         $connection->onMessage = array($this, 'onMessage');
-        $connection->onError   = array($this, 'onError');
-        $connection->onClose   = array($this, 'onUnexpectClose');
+        $connection->onError = array($this, 'onError');
+        $connection->onClose = array($this, 'onUnexpectClose');
         $this->_connection = $connection;
 
         return $this;
