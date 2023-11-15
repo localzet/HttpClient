@@ -18,17 +18,8 @@ namespace localzet\HTTP;
 /**
  * FrameX default Http client
  */
-class Curl
+class HttpClient
 {
-    /**
-     * Default curl options
-     *
-     * These defaults options can be overwritten when sending requests.
-     *
-     * See setCurlOptions()
-     *
-     * @var array
-     */
     protected $curlOptions = [
         CURLOPT_TIMEOUT => 30,
         CURLOPT_CONNECTTIMEOUT => 30,
@@ -43,20 +34,7 @@ class Curl
         CURLOPT_USERAGENT => 'Localzet HTTP Client',
     ];
 
-    /**
-     * Method request() arguments
-     *
-     * This is used for debugging.
-     *
-     * @var array
-     */
     protected $requestArguments = [];
-
-    /**
-     * Default request headers
-     *
-     * @var array
-     */
     protected $requestHeader = [
         'Accept' => '*/*',
         'Cache-Control' => 'max-age=0',
@@ -65,44 +43,12 @@ class Curl
         'Pragma' => '',
     ];
 
-    /**
-     * Raw response returned by server
-     *
-     * @var string
-     */
     protected $responseBody = '';
-
-    /**
-     * Headers returned in the response
-     *
-     * @var array
-     */
     protected $responseHeader = [];
-
-    /**
-     * Response HTTP status code
-     *
-     * @var int
-     */
     protected $responseHttpCode = 0;
-
-    /**
-     * Last curl error number
-     *
-     * @var mixed
-     */
     protected $responseClientError = null;
-
-    /**
-     * Information about the last transfer
-     *
-     * @var mixed
-     */
     protected $responseClientInfo = [];
 
-    /**
-     * {@inheritdoc}
-     */
     public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false)
     {
         $this->requestHeader = array_replace($this->requestHeader, (array)$headers);
@@ -163,11 +109,6 @@ class Curl
         return $this->responseBody;
     }
 
-    /**
-     * Get response details
-     *
-     * @return array Map structure of details
-     */
     public function getResponse()
     {
         $curlOptions = $this->curlOptions;
@@ -188,76 +129,41 @@ class Curl
         ];
     }
 
-    /**
-     * Reset curl options
-     *
-     * @param array $curlOptions
-     */
     public function setCurlOptions($curlOptions)
     {
         $this->curlOptions = $curlOptions;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getResponseBody()
     {
         return $this->responseBody;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getResponseHeader()
     {
         return $this->responseHeader;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getResponseHttpCode()
     {
         return $this->responseHttpCode;
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function getResponseClientError()
     {
         return $this->responseClientError;
     }
 
-    /**
-     * @return array
-     */
     protected function getResponseClientInfo()
     {
         return $this->responseClientInfo;
     }
 
-    /**
-     * Returns method request() arguments
-     *
-     * This is used for debugging.
-     *
-     * @return array
-     */
     protected function getRequestArguments()
     {
         return $this->requestArguments;
     }
 
-    /**
-     * Fetch server response headers
-     *
-     * @param mixed $curl
-     * @param string $header
-     *
-     * @return int
-     */
     protected function fetchResponseHeader($curl, $header)
     {
         $pos = strpos($header, ':');
@@ -273,11 +179,6 @@ class Curl
         return strlen($header);
     }
 
-    /**
-     * Convert request headers to the expect curl format
-     *
-     * @return array
-     */
     protected function prepareRequestHeaders()
     {
         $headers = [];
