@@ -64,7 +64,7 @@ class Client
     protected $responseClientError = null;
     protected $responseClientInfo = [];
 
-    public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false)
+    public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false, $curlOptions = [])
     {
         $this->requestHeader = array_replace($this->requestHeader, (array)$headers);
 
@@ -77,10 +77,8 @@ class Client
 
         $curl = curl_init();
 
-        $curlOptions = $this->curlOptions;
-        $curlOptions[CURLOPT_URL] = $uri;
-        $curlOptions[CURLOPT_HTTPHEADER] = $this->prepareRequestHeaders();
-        $curlOptions[CURLOPT_HEADERFUNCTION] = [$this, 'fetchResponseHeader'];
+        // Объедините опции cURL по умолчанию с любыми пользовательскими опциями
+        $curlOptions = $curlOptions + $this->curlOptions;
 
         switch ($method) {
             case 'GET':
@@ -110,6 +108,10 @@ class Client
                 break;
         }
 
+        $curlOptions[CURLOPT_URL] = $uri;
+        $curlOptions[CURLOPT_HTTPHEADER] = $this->prepareRequestHeaders();
+        $curlOptions[CURLOPT_HEADERFUNCTION] = [$this, 'fetchResponseHeader'];
+
         curl_setopt_array($curl, $curlOptions);
 
         $response = curl_exec($curl);
@@ -126,9 +128,6 @@ class Client
 
     public function getResponse()
     {
-        $curlOptions = $this->curlOptions;
-        $curlOptions[CURLOPT_HEADERFUNCTION] = '*omitted';
-
         return [
             'request' => $this->getRequestArguments(),
             'response' => [
@@ -139,7 +138,6 @@ class Client
             'client' => [
                 'error' => $this->getResponseClientError(),
                 'info' => $this->getResponseClientInfo(),
-                'opts' => $curlOptions,
             ],
         ];
     }
