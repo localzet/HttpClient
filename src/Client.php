@@ -46,12 +46,6 @@ class Client
         CURLINFO_HEADER_OUT => true, // Включает вывод заголовка в данные информации
         CURLOPT_ENCODING => 'identity', // Устанавливает заголовок "Accept-Encoding: "
         CURLOPT_USERAGENT => 'Localzet HTTP Client', // Содержимое заголовка "User-Agent: ", используемого в HTTP-запросе
-
-//        CURLOPT_POST => true, // Отправляет HTTP POST запрос
-//        CURLOPT_POSTFIELDS => null, // Все данные, которые нужно передать в HTTP POST запросе
-//        CURLOPT_HEADER => true, // Включает заголовки в вывод
-//        CURLOPT_NOBODY => true, // Исключает тело ответа из вывода
-//        CURLOPT_CUSTOMREQUEST => null // Устанавливает пользовательский метод запроса
     ];
 
 
@@ -148,11 +142,6 @@ class Client
                 'opts' => $curlOptions,
             ],
         ];
-    }
-
-    public function setCurlOptions($curlOptions)
-    {
-        $this->curlOptions = $curlOptions;
     }
 
     public function getResponseBody()
