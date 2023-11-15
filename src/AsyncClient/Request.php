@@ -1,6 +1,6 @@
 <?php
 /**
- * @package     WebCore HTTP Client
+ * @package     WebCore HTTP AsyncClient
  * @link        https://localzet.gitbook.io
  *
  * @author      localzet <creator@localzet.ru>
@@ -11,7 +11,7 @@
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
 
-namespace localzet\HTTP;
+namespace localzet\HTTP\AsyncClient;
 
 use AllowDynamicProperties;
 use Exception;
@@ -94,7 +94,7 @@ class Request extends \localzet\PSR7\Request
     {
         $this->_emitter = new Emitter();
         $headers = [
-            'User-Agent' => 'Localzet HTTP Client',
+            'User-Agent' => 'Localzet HTTP AsyncClient',
             'Connection' => 'keep-alive'
         ];
         parent::__construct('GET', $url, $headers, '');
