@@ -1,6 +1,6 @@
 <?php
 
-use localzet\HTTP\Client;
+use localzet\HTTP\AsyncClient;
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -11,7 +11,7 @@ $options = [
     'timeout' => 30,                // Ожидание между запросами
 ];
 
-$http = new Client($options);
+$http = new AsyncClient($options);
 
 /**
  * $http->get() принимает 3 аргумента:
