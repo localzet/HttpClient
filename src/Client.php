@@ -21,18 +21,39 @@ namespace localzet\HTTP;
 class Client
 {
     protected $curlOptions = [
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CONNECTTIMEOUT => 30,
-        CURLOPT_SSL_VERIFYPEER => false,
-        CURLOPT_SSL_VERIFYHOST => false,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_MAXREDIRS => 5,
-        CURLINFO_HEADER_OUT => true,
-        CURLOPT_ENCODING => 'identity',
-        // phpcs:ignore
-        CURLOPT_USERAGENT => 'Localzet HTTP AsyncClient',
+        CURLOPT_AUTOREFERER => true, // Автоматически устанавливает поле Referer при переходе по ссылкам
+        CURLOPT_COOKIESESSION => true, // Инициализирует новую сессию cookie
+        CURLOPT_CERTINFO => true, // Включает вывод информации о сертификате в массиве информации cURL
+        CURLOPT_CONNECT_ONLY => true, // Позволяет приложению использовать сокет для дальнейших отправок
+        CURLOPT_CRLF => true, // Включает преобразование Unix-новых строк в CRLF-новые строки на Windows
+        CURLOPT_DISALLOW_USERNAME_IN_URL => true, // Отключает передачу имени пользователя и пароля в URL
+        CURLOPT_DNS_SHUFFLE_ADDRESSES => true, // Включает перемешивание IP-адресов DNS
+        CURLOPT_HAPROXYPROTOCOL => true, // Включает поддержку протокола HAProxy PROXY
+        CURLOPT_SSH_COMPRESSION => true, // Включает сжатие SSH
+        CURLOPT_DNS_USE_GLOBAL_CACHE => true, // Включает глобальный кэш DNS
+        CURLOPT_FAILONERROR => true, // Включает неудачное завершение при HTTP-коде >= 400
+        CURLOPT_SSL_FALSESTART => true, // Включает False Start в TLS-подключениях
+        CURLOPT_FILETIME => true, // Включает получение времени модификации удаленного документа
+
+        CURLOPT_TIMEOUT => 30, // Устанавливает максимальное время ожидания выполнения функций cURL
+        CURLOPT_CONNECTTIMEOUT => 30, // Устанавливает количество секунд, которое cURL должен ждать при попытке подключения
+        CURLOPT_SSL_VERIFYPEER => false, // Отключает проверку SSL сертификата
+        CURLOPT_SSL_VERIFYHOST => false, // Отключает проверку имени хоста в сертификате SSL
+        CURLOPT_RETURNTRANSFER => true, // Возвращает результат передачи в виде строки из curl_exec() вместо вывода его непосредственно
+        CURLOPT_FOLLOWLOCATION => true, // Следует за любым заголовком "Location: ", отправленным сервером в своем ответе
+
+        CURLOPT_MAXREDIRS => 5, // Определяет максимальное количество редиректов, которые cURL должен следовать
+        CURLINFO_HEADER_OUT => true, // Включает вывод заголовка в данные информации
+        CURLOPT_ENCODING => 'identity', // Устанавливает заголовок "Accept-Encoding: "
+        CURLOPT_USERAGENT => 'Localzet HTTP Client', // Содержимое заголовка "User-Agent: ", используемого в HTTP-запросе
+
+//        CURLOPT_POST => true, // Отправляет HTTP POST запрос
+//        CURLOPT_POSTFIELDS => null, // Все данные, которые нужно передать в HTTP POST запросе
+//        CURLOPT_HEADER => true, // Включает заголовки в вывод
+//        CURLOPT_NOBODY => true, // Исключает тело ответа из вывода
+//        CURLOPT_CUSTOMREQUEST => null // Устанавливает пользовательский метод запроса
     ];
+
 
     protected $requestArguments = [];
     protected $requestHeader = [
