@@ -18,17 +18,12 @@
     "email": "support@localzet.com",
     "source": "https://github.com/localzet/HttpClient"
   },
-  "funding": [
-    {
-      "type": "other",
-      "url": "https://www.tinkoff.ru/cf/Ad5MBNhodod"
-    }
-  ],
   "require": {
     "php": "^8.2",
-    "localzet/server": ">=4.0",
+    "ext-curl": "*",
+    "ext-json": "*",
     "localzet/psr7": "^3.0",
-    "ext-json": "*"
+    "localzet/server": ">=4.0"
   },
   "autoload": {
     "psr-4": {
