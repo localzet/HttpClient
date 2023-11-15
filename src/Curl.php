@@ -171,7 +171,6 @@ class Curl
     public function getResponse()
     {
         $curlOptions = $this->curlOptions;
-
         $curlOptions[CURLOPT_HEADERFUNCTION] = '*omitted';
 
         return [
@@ -196,9 +195,7 @@ class Curl
      */
     public function setCurlOptions($curlOptions)
     {
-        foreach ($curlOptions as $opt => $value) {
-            $this->curlOptions[$opt] = $value;
-        }
+        $this->curlOptions = $curlOptions;
     }
 
     /**
