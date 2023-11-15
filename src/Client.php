@@ -1,328 +1,192 @@
 <?php
+
 /**
- * @package     WebCore HTTP Client
+ * @package     FrameX (FX) HttpClient Plugin
  * @link        https://localzet.gitbook.io
- *
+ * 
  * @author      localzet <creator@localzet.ru>
- *
- * @copyright   Copyright (c) 2018-2020 Zorin Projects
+ * 
+ * @copyright   Copyright (c) 2018-2020 Zorin Projects 
  * @copyright   Copyright (c) 2020-2022 NONA Team
- *
+ * 
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
 
 namespace localzet\HTTP;
 
-use AllowDynamicProperties;
-use Exception;
-use localzet\Server;
-use localzet\Server\Events\Linux;
-use Throwable;
 
 /**
- * Class Http\Client
- * @package localzet\HTTP
+ * FrameX default Http client
  */
-#[AllowDynamicProperties]
 class Client
 {
-    /**
-     *
-     *[
-     *   address=>[
-     *        [
-     *        'url'=>x,
-     *        'address'=>x
-     *        'options'=>['method', 'data'=>x, 'success'=>callback, 'error'=>callback, 'headers'=>[..], 'version'=>1.1]
-     *        ],
-     *        ..
-     *   ],
-     *   ..
-     * ]
-     * @var array
-     */
-    protected array $_queue = array();
+    protected $curlOptions = [
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_CONNECTTIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 5,
+        CURLINFO_HEADER_OUT => true,
+        CURLOPT_ENCODING => 'identity',
+        // phpcs:ignore
+        CURLOPT_USERAGENT => 'Localzet HTTP AsyncClient',
+    ];
 
-    /**
-     * @var array
-     */
-    protected $_connectionPool = null;
+    protected $requestArguments = [];
+    protected $requestHeader = [
+        'Accept' => '*/*',
+        'Cache-Control' => 'max-age=0',
+        'Connection' => 'keep-alive',
+        'Expect' => '',
+        'Pragma' => '',
+    ];
 
-    /**
-     * Client constructor.
-     * @param array $options
-     */
-    public function __construct(array $options = [])
+    protected $responseBody = '';
+    protected $responseHeader = [];
+    protected $responseHttpCode = 0;
+    protected $responseClientError = null;
+    protected $responseClientInfo = [];
+
+    public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false)
     {
-        $this->_connectionPool = new ConnectionPool($options);
-        $this->_connectionPool->on('idle', array($this, 'process'));
-    }
+        $this->requestHeader = array_replace($this->requestHeader, (array)$headers);
 
-    /**
-     * Get.
-     *
-     * @param $url
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
-     * @throws Throwable
-     */
-    public function get($url, $success_callback = null, $error_callback = null): mixed
-    {
-        $options = [];
-        if ($success_callback) {
-            $options['success'] = $success_callback;
-        }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
-        }
-        return $this->request($url, $options);
-    }
+        $this->requestArguments = [
+            'uri' => $uri,
+            'method' => $method,
+            'parameters' => $parameters,
+            'headers' => $this->requestHeader,
+        ];
 
-    /**
-     * Request.
-     *
-     * @param $url string
-     * @param array $options ['method'=>'get', 'data'=>x, 'success'=>callback, 'error'=>callback, 'headers'=>[..], 'version'=>1.1]
-     * @return mixed|Response|void
-     * @throws Throwable
-     */
-    public function request(string $url, array $options = [])
-    {
-        $address = $this->parseAddress($url, $options);
-        $options['url'] = $url;
-        $needSuspend = !isset($options['success']) && Server::$globalEvent instanceof Linux;
-        if ($needSuspend) {
-            $suspension = Server::$globalEvent->getSuspension();
-            $options['success'] = function ($response) use ($suspension) {
-                $suspension->resume($response);
-            };
-        }
-        $this->queuePush($address, ['url' => $url, 'address' => $address, 'options' => $options]);
-        $this->process($address);
-        if ($needSuspend) {
-            return $suspension->suspend();
-        }
-    }
+        $curl = curl_init();
 
-    /**
-     * Parse address from url.
-     *
-     * @param $url
-     * @param $options
-     * @return string
-     */
-    protected function parseAddress($url, $options): string
-    {
-        $info = parse_url($url);
-        if (empty($info) || !isset($info['host'])) {
-            $e = new Exception("invalid url: $url");
-            if (!empty($options['error'])) {
-                call_user_func($options['error'], $e);
-            }
-        }
-        $port = $info['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
-        return "tcp://{$info['host']}:$port";
-    }
+        $curlOptions = $this->curlOptions;
+        $curlOptions[CURLOPT_URL] = $uri;
+        $curlOptions[CURLOPT_HTTPHEADER] = $this->prepareRequestHeaders();
+        $curlOptions[CURLOPT_HEADERFUNCTION] = [$this, 'fetchResponseHeader'];
 
-    /**
-     * Queue push.
-     *
-     * @param $address
-     * @param $task
-     */
-    protected function queuePush($address, $task): void
-    {
-        if (!isset($this->_queue[$address])) {
-            $this->_queue[$address] = [];
-        }
-        $this->_queue[$address][] = $task;
-    }
+        switch ($method) {
+            case 'GET':
+            case 'DELETE':
+                $uri .= (strpos($uri, '?') ? '&' : '?') . http_build_query($parameters);
+                if ($method === 'DELETE') {
+                    $curlOptions[CURLOPT_CUSTOMREQUEST] = 'DELETE';
+                }
+                break;
+            case 'PUT':
+            case 'POST':
+            case 'PATCH':
+                $body_content = $multipart ? $parameters : http_build_query($parameters);
+                if (
+                    isset($this->requestHeader['Content-Type'])
+                    && $this->requestHeader['Content-Type'] == 'application/json'
+                ) {
+                    $body_content = json_encode($parameters);
+                }
 
-    /**
-     * Process.
-     * User should not call this.
-     *
-     * @param $address
-     * @return void
-     * @throws Throwable
-     */
-    public function process($address): void
-    {
-        $task = $this->queueCurrent($address);
-        if (!$task) {
-            return;
-        }
-
-        $url = $task['url'];
-        $address = $task['address'];
-        $connection = $this->_connectionPool->fetch($address, str_starts_with($url, 'https'));
-
-        // No connection is in idle state then wait.
-        if (!$connection) {
-            return;
-        }
-
-        $this->queuePop($address);
-        $options = $task['options'];
-        $request = new Request($url);
-        $data = $options['data'] ?? '';
-        if ($data || $data === '0' || $data === 0) {
-            $method = isset($options['method']) ? strtoupper($options['method']) : null;
-            if (in_array($method, ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-                $request->write($options['data']);
-            } else {
-                $options['query'] = $data;
-            }
-        }
-        $request->setOptions($options)->attachConnection($connection);
-
-        $client = $this;
-        $request->on('success', function ($response) use ($task, $client, $request) {
-            $client->recycleConnectionFromRequest($request, $response);
-            try {
-                $new_request = Request::redirect($request, $response);
-            } catch (Exception $exception) {
-                if (!empty($task['options']['error'])) {
-                    call_user_func($task['options']['error'], $exception);
+                if ($method === 'POST') {
+                    $curlOptions[CURLOPT_POST] = true;
                 } else {
-                    throw $exception;
+                    $curlOptions[CURLOPT_CUSTOMREQUEST] = $method;
                 }
-                return;
-            }
-            // No redirect.
-            if (!$new_request) {
-                if (!empty($task['options']['success'])) {
-                    call_user_func($task['options']['success'], $response);
-                }
-                return;
-            }
-
-            // Redirect.
-            $uri = $new_request->getUri();
-            $url = (string)$uri;
-            $options = $new_request->getOptions();
-            $address = $this->parseAddress($url, $options);
-            $task = [
-                'url' => $url,
-                'options' => $options,
-                'address' => $address
-            ];
-            $this->queueUnshift($address, $task);
-            $this->process($address);
-        })->on('error', function ($exception) use ($task, $client, $request) {
-            $client->recycleConnectionFromRequest($request);
-            if (!empty($task['options']['error'])) {
-                call_user_func($task['options']['error'], $exception);
-            } else {
-                throw $exception;
-            }
-        });
-
-        $state = $connection->getStatus(false);
-        if ($state === 'CLOSING' || $state === 'CLOSED') {
-            $connection->reconnect();
+                $curlOptions[CURLOPT_POSTFIELDS] = $body_content;
+                break;
         }
 
-        $state = $connection->getStatus(false);
-        if ($state === 'CLOSED' || $state === 'CLOSING') {
-            return;
-        }
+        curl_setopt_array($curl, $curlOptions);
 
-        $request->end();
+        $response = curl_exec($curl);
+
+        $this->responseBody = $response;
+        $this->responseHttpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $this->responseClientError = curl_error($curl);
+        $this->responseClientInfo = curl_getinfo($curl);
+
+        curl_close($curl);
+
+        return $this->responseBody;
     }
 
-    /**
-     * Queue current item.
-     *
-     * @param $address
-     * @return mixed|null
-     */
-    protected function queueCurrent($address): mixed
+    public function getResponse()
     {
-        if (empty($this->_queue[$address])) {
-            return null;
-        }
-        reset($this->_queue[$address]);
-        return current($this->_queue[$address]);
+        $curlOptions = $this->curlOptions;
+        $curlOptions[CURLOPT_HEADERFUNCTION] = '*omitted';
+
+        return [
+            'request' => $this->getRequestArguments(),
+            'response' => [
+                'code' => $this->getResponseHttpCode(),
+                'headers' => $this->getResponseHeader(),
+                'body' => $this->getResponseBody(),
+            ],
+            'client' => [
+                'error' => $this->getResponseClientError(),
+                'info' => $this->getResponseClientInfo(),
+                'opts' => $curlOptions,
+            ],
+        ];
     }
 
-    /**
-     * Queue pop.
-     *
-     * @param $address
-     */
-    protected function queuePop($address): void
+    public function setCurlOptions($curlOptions)
     {
-        unset($this->_queue[$address][key($this->_queue[$address])]);
-        if (empty($this->_queue[$address])) {
-            unset($this->_queue[$address]);
-        }
+        $this->curlOptions = $curlOptions;
     }
 
-    /**
-     * Recycle connection from request.
-     *
-     * @param $request Request
-     * @param $response Response|null
-     * @throws Throwable
-     */
-    public function recycleConnectionFromRequest(Request $request, Response $response = null): void
+    public function getResponseBody()
     {
-        $connection = $request->getConnection();
-        if (!$connection) {
-            return;
-        }
-        $connection->onConnect = $connection->onClose = $connection->onMessage = $connection->onError = null;
-        $request_header_connection = strtolower($request->getHeaderLine('Connection'));
-        $response_header_connection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
-        // Close Connection without header Connection: keep-alive
-        if ('keep-alive' !== $request_header_connection || 'keep-alive' !== $response_header_connection || $request->getProtocolVersion() !== '1.1') {
-            $connection->close();
-        }
-        $request->detachConnection();
-        $this->_connectionPool->recycle($connection);
+        return $this->responseBody;
     }
 
-    /**
-     * Queue unshift.
-     *
-     * @param $address
-     * @param $task
-     */
-    protected function queueUnshift($address, $task): void
+    public function getResponseHeader()
     {
-        if (!isset($this->_queue[$address])) {
-            $this->_queue[$address] = [];
-        }
-        $this->_queue[$address] += [$task];
+        return $this->responseHeader;
     }
 
-    /**
-     * Post.
-     *
-     * @param $url
-     * @param array $data
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
-     * @throws Throwable
-     */
-    public function post($url, array $data = [], $success_callback = null, $error_callback = null): mixed
+    public function getResponseHttpCode()
     {
-        $options = [];
-        if ($data) {
-            $options['data'] = $data;
+        return $this->responseHttpCode;
+    }
+
+    public function getResponseClientError()
+    {
+        return $this->responseClientError;
+    }
+
+    protected function getResponseClientInfo()
+    {
+        return $this->responseClientInfo;
+    }
+
+    protected function getRequestArguments()
+    {
+        return $this->requestArguments;
+    }
+
+    protected function fetchResponseHeader($curl, $header)
+    {
+        $pos = strpos($header, ':');
+
+        if (!empty($pos)) {
+            $key = str_replace('-', '_', strtolower(substr($header, 0, $pos)));
+
+            $value = trim(substr($header, $pos + 2));
+
+            $this->responseHeader[$key] = $value;
         }
-        if ($success_callback) {
-            $options['success'] = $success_callback;
+
+        return strlen($header);
+    }
+
+    protected function prepareRequestHeaders()
+    {
+        $headers = [];
+
+        foreach ($this->requestHeader as $header => $value) {
+            $headers[] = trim($header) . ': ' . trim($value);
         }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
-        }
-        $options['method'] = 'POST';
-        return $this->request($url, $options);
+
+        return $headers;
     }
 }
