@@ -55,7 +55,7 @@ class ConnectionPool extends Emitter
      *
      * @param array $option
      */
-    public function __construct(array $option = [])
+    public function __construct($option = [])
     {
         $this->_options = array_merge($this->_options, $option);
     }
@@ -68,7 +68,7 @@ class ConnectionPool extends Emitter
      * @return mixed
      * @throws Throwable
      */
-    public function fetch($address, bool $ssl = false)
+    public function fetch($address, $ssl = false)
     {
         $max_con = $this->_options['max_conn_per_addr'];
         if (!empty($this->_using[$address])) {
@@ -95,7 +95,7 @@ class ConnectionPool extends Emitter
      *
      * @param $connection AsyncTcpConnection
      */
-    public function recycle(AsyncTcpConnection $connection): void
+    public function recycle($connection)
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -118,7 +118,7 @@ class ConnectionPool extends Emitter
      *
      * @param $connection
      */
-    public function delete($connection): void
+    public function delete($connection)
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -135,9 +135,8 @@ class ConnectionPool extends Emitter
     /**
      * Close timeout connection.
      * @throws Throwable
-     * @throws Throwable
      */
-    public function closeTimeoutConnection(): void
+    public function closeTimeoutConnection()
     {
         if (empty($this->_idle) && empty($this->_using)) {
             Timer::del($this->_timer);
@@ -211,13 +210,10 @@ class ConnectionPool extends Emitter
      * @param $address
      * @param bool $ssl
      * @return AsyncTcpConnection
-     * @throws Throwable
-     * @throws Throwable
-     * @throws Throwable
      * @throws Exception
-     * @throws Exception
+     * @throws Throwable
      */
-    protected function create($address, bool $ssl = false): AsyncTcpConnection
+    protected function create($address, $ssl = false)
     {
         $context = array(
             'ssl' => array(
@@ -233,7 +229,7 @@ class ConnectionPool extends Emitter
             unset($context['ssl']);
         }
         if (!class_exists(Server::class) || is_null(Server::$globalEvent)) {
-            throw new Exception('Only the Localzet Server environment is supported.');
+            throw new Exception('Only the localzet environment is supported.');
         }
         $connection = new AsyncTcpConnection($address, $context);
         if ($ssl) {
@@ -248,7 +244,7 @@ class ConnectionPool extends Emitter
     /**
      * Create Timer.
      */
-    protected function tryToCreateConnectionCheckTimer(): void
+    protected function tryToCreateConnectionCheckTimer()
     {
         if (!$this->_timer) {
             $this->_timer = Timer::add(1, [$this, 'closeTimeoutConnection']);
