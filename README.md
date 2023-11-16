@@ -28,11 +28,11 @@
 ```php
 <?php
 
-use localzet\HTTP\Client;
+use localzet\HTTP\AsyncClient;
 
 require __DIR__ . '/vendor/autoload.php';
 
-$http = new Client();
+$http = new AsyncClient();
 
 /**
  * $http->get() принимает 3 аргумента:
