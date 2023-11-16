@@ -118,15 +118,16 @@ class AsyncClient
      */
     protected function parseAddress($url, $options): string
     {
-        $info = parse_url($url);
-        if (empty($info) || !isset($info['host'])) {
-            $e = new Exception("invalid url: $url");
+        $parts = parse_url($url);
+
+        if (empty($parts) || !isset($parts['host'])) {
+            $exception = new Exception("invalid url: $url");
             if (!empty($options['error'])) {
-                call_user_func($options['error'], $e);
+                call_user_func($options['error'], $exception);
             }
         }
-        $port = $info['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
-        return "tcp://{$info['host']}:$port";
+        $port = $parts['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
+        return "tcp://{$parts['host']}:$port";
     }
 
     /**
