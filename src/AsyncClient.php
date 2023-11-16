@@ -23,7 +23,7 @@ use localzet\Server\Events\Linux;
 use Throwable;
 
 /**
- * Class Http\AsyncClient
+ * Class HTTP\Client
  * @package localzet\HTTP
  */
 #[AllowDynamicProperties]
@@ -44,7 +44,7 @@ class AsyncClient
      * ]
      * @var array
      */
-    protected array $_queue = array();
+    protected $_queue = array();
 
     /**
      * @var array
@@ -52,35 +52,13 @@ class AsyncClient
     protected $_connectionPool = null;
 
     /**
-     * AsyncClient constructor.
+     * Client constructor.
      * @param array $options
      */
-    public function __construct(array $options = [])
+    public function __construct($options = [])
     {
         $this->_connectionPool = new ConnectionPool($options);
         $this->_connectionPool->on('idle', array($this, 'process'));
-    }
-
-    /**
-     * Get.
-     *
-     * @param $url
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
-     * @throws Throwable
-     */
-    public function get($url, $success_callback = null, $error_callback = null): mixed
-    {
-        $options = [];
-        if ($success_callback) {
-            $options['success'] = $success_callback;
-        }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
-        }
-        return $this->request($url, $options);
     }
 
     /**
@@ -88,10 +66,10 @@ class AsyncClient
      *
      * @param $url string
      * @param array $options ['method'=>'get', 'data'=>x, 'success'=>callback, 'error'=>callback, 'headers'=>[..], 'version'=>1.1]
-     * @return mixed|Response|void
+     * @return mixed|Response
      * @throws Throwable
      */
-    public function request(string $url, array $options = [])
+    public function request($url, $options = [])
     {
         $address = $this->parseAddress($url, $options);
         $options['url'] = $url;
@@ -110,38 +88,50 @@ class AsyncClient
     }
 
     /**
-     * Parse address from url.
+     * Get.
      *
      * @param $url
-     * @param $options
-     * @return string
+     * @param null $success_callback
+     * @param null $error_callback
+     * @return mixed|Response
+     * @throws Throwable
      */
-    protected function parseAddress($url, $options): string
+    public function get($url, $success_callback = null, $error_callback = null)
     {
-        $parts = parse_url($url);
-
-        if (empty($parts) || !isset($parts['host'])) {
-            $exception = new Exception("invalid url: $url");
-            if (!empty($options['error'])) {
-                call_user_func($options['error'], $exception);
-            }
+        $options = [];
+        if ($success_callback) {
+            $options['success'] = $success_callback;
         }
-        $port = $parts['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
-        return "tcp://{$parts['host']}:$port";
+        if ($error_callback) {
+            $options['error'] = $error_callback;
+        }
+        return $this->request($url, $options);
     }
 
     /**
-     * Queue push.
+     * Post.
      *
-     * @param $address
-     * @param $task
+     * @param $url
+     * @param array $data
+     * @param null $success_callback
+     * @param null $error_callback
+     * @return mixed|Response
+     * @throws Throwable
      */
-    protected function queuePush($address, $task): void
+    public function post($url, $data = [], $success_callback = null, $error_callback = null)
     {
-        if (!isset($this->_queue[$address])) {
-            $this->_queue[$address] = [];
+        $options = [];
+        if ($data) {
+            $options['data'] = $data;
         }
-        $this->_queue[$address][] = $task;
+        if ($success_callback) {
+            $options['success'] = $success_callback;
+        }
+        if ($error_callback) {
+            $options['error'] = $error_callback;
+        }
+        $options['method'] = 'POST';
+        return $this->request($url, $options);
     }
 
     /**
@@ -152,7 +142,7 @@ class AsyncClient
      * @return void
      * @throws Throwable
      */
-    public function process($address): void
+    public function process($address)
     {
         $task = $this->queueCurrent($address);
         if (!$task) {
@@ -234,7 +224,79 @@ class AsyncClient
             return;
         }
 
-        $request->end();
+        $request->end('');
+    }
+
+    /**
+     * Recycle connection from request.
+     *
+     * @param $request Request
+     * @param null $response Response
+     * @throws Throwable
+     */
+    public function recycleConnectionFromRequest($request, $response = null)
+    {
+        $connection = $request->getConnection();
+        if (!$connection) {
+            return;
+        }
+        $connection->onConnect = $connection->onClose = $connection->onMessage = $connection->onError = null;
+        $request_header_connection = strtolower($request->getHeaderLine('Connection'));
+        $response_header_connection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
+        // Close Connection without header Connection: keep-alive
+        if ('keep-alive' !== $request_header_connection || 'keep-alive' !== $response_header_connection || $request->getProtocolVersion() !== '1.1') {
+            $connection->close();
+        }
+        $request->detachConnection($connection);
+        $this->_connectionPool->recycle($connection);
+    }
+
+    /**
+     * Parse address from url.
+     *
+     * @param $url
+     * @param $options
+     * @return string
+     */
+    protected function parseAddress($url, $options)
+    {
+        $info = parse_url($url);
+        if (empty($info) || !isset($info['host'])) {
+            $e = new Exception("invalid url: $url");
+            if (!empty($options['error'])) {
+                call_user_func($options['error'], $e);
+            }
+        }
+        $port = $info['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
+        return "tcp://{$info['host']}:{$port}";
+    }
+
+    /**
+     * Queue push.
+     *
+     * @param $address
+     * @param $task
+     */
+    protected function queuePush($address, $task)
+    {
+        if (!isset($this->_queue[$address])) {
+            $this->_queue[$address] = [];
+        }
+        $this->_queue[$address][] = $task;
+    }
+
+    /**
+     * Queue unshift.
+     *
+     * @param $address
+     * @param $task
+     */
+    protected function queueUnshift($address, $task)
+    {
+        if (!isset($this->_queue[$address])) {
+            $this->_queue[$address] = [];
+        }
+        $this->_queue[$address] += [$task];
     }
 
     /**
@@ -243,7 +305,7 @@ class AsyncClient
      * @param $address
      * @return mixed|null
      */
-    protected function queueCurrent($address): mixed
+    protected function queueCurrent($address)
     {
         if (empty($this->_queue[$address])) {
             return null;
@@ -257,76 +319,11 @@ class AsyncClient
      *
      * @param $address
      */
-    protected function queuePop($address): void
+    protected function queuePop($address)
     {
         unset($this->_queue[$address][key($this->_queue[$address])]);
         if (empty($this->_queue[$address])) {
             unset($this->_queue[$address]);
         }
-    }
-
-    /**
-     * Recycle connection from request.
-     *
-     * @param $request Request
-     * @param $response Response|null
-     * @throws Throwable
-     */
-    public function recycleConnectionFromRequest(Request $request, Response $response = null): void
-    {
-        $connection = $request->getConnection();
-        if (!$connection) {
-            return;
-        }
-        $connection->onConnect = $connection->onClose = $connection->onMessage = $connection->onError = null;
-        $request_header_connection = strtolower($request->getHeaderLine('Connection'));
-        $response_header_connection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
-        // Close Connection without header Connection: keep-alive
-        if ('keep-alive' !== $request_header_connection || 'keep-alive' !== $response_header_connection || $request->getProtocolVersion() !== '1.1') {
-            $connection->close();
-        }
-        $request->detachConnection();
-        $this->_connectionPool->recycle($connection);
-    }
-
-    /**
-     * Queue unshift.
-     *
-     * @param $address
-     * @param $task
-     */
-    protected function queueUnshift($address, $task): void
-    {
-        if (!isset($this->_queue[$address])) {
-            $this->_queue[$address] = [];
-        }
-        $this->_queue[$address] += [$task];
-    }
-
-    /**
-     * Post.
-     *
-     * @param $url
-     * @param array $data
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
-     * @throws Throwable
-     */
-    public function post($url, array $data = [], $success_callback = null, $error_callback = null): mixed
-    {
-        $options = [];
-        if ($data) {
-            $options['data'] = $data;
-        }
-        if ($success_callback) {
-            $options['success'] = $success_callback;
-        }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
-        }
-        $options['method'] = 'POST';
-        return $this->request($url, $options);
     }
 }
