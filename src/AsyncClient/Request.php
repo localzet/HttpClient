@@ -15,13 +15,11 @@ namespace localzet\HTTP\AsyncClient;
 
 use AllowDynamicProperties;
 use Exception;
-use InvalidArgumentException;
 use localzet\PSR\Http\Message\MessageInterface;
 use localzet\PSR7\Uri;
 use localzet\PSR7\UriResolver;
 use localzet\Server\Connection\AsyncTcpConnection;
 use Throwable;
-use function localzet\PSR7\_parse_message;
 use function localzet\PSR7\rewind_body;
 use function localzet\PSR7\str;
 
@@ -94,7 +92,7 @@ class Request extends \localzet\PSR7\Request
     {
         $this->_emitter = new Emitter();
         $headers = [
-            'User-Agent' => 'Localzet HTTP AsyncClient',
+            'User-Agent' => 'Localzet HTTP Client',
             'Connection' => 'keep-alive'
         ];
         parent::__construct('GET', $url, $headers, '');
@@ -302,51 +300,6 @@ class Request extends \localzet\PSR7\Request
         $this->_connection->send($package);
     }
 
-    /**
-     * @throws Throwable
-     */
-    public function onConnect(): void
-    {
-        try {
-            $this->doSend();
-        } catch (Throwable $e) {
-            $this->emitError($e);
-        }
-    }
-
-    /**
-     * @param $connection
-     * @param $recv_buffer
-     * @throws Throwable
-     */
-    public function onMessage($connection, $recv_buffer)
-    {
-        try {
-            $this->_recvBuffer .= $recv_buffer;
-            if (!strpos($this->_recvBuffer, "\r\n\r\n")) {
-                return;
-            }
-
-            $response_data = _parse_message($this->_recvBuffer);
-
-            if (!preg_match('/^HTTP\/.* [0-9]{3}( .*|$)/', $response_data['start-line'])) {
-                throw new InvalidArgumentException('Invalid response string: ' . $response_data['start-line']);
-            }
-            $parts = explode(' ', $response_data['start-line'], 3);
-
-            $this->_response = new Response(
-                $parts[1],
-                $response_data['headers'],
-                '',
-                explode('/', $parts[0])[1],
-                $parts[2] ?? null
-            );
-
-            $this->checkComplete($response_data['body']);
-        } catch (Exception $e) {
-            $this->emitError($e);
-        }
-    }
 
     /**
      * @param $body
@@ -455,35 +408,6 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * onError.
-     * @throws Throwable
-     */
-    public function onError($connection, $code, $msg)
-    {
-        $this->emitError(new Exception($msg, $code));
-    }
-
-    /**
-     * emitSuccess.
-     */
-    public function emitSuccess()
-    {
-        $this->emit('success', $this->_response);
-    }
-
-    /**
-     * @throws Throwable
-     */
-    public function emitError($e)
-    {
-        try {
-            $this->emit('error', $e);
-        } finally {
-            $this->_connection && $this->_connection->destroy();
-        }
-    }
-
-    /**
      * @param $request Request
      * @param $response Response
      * @return false|MessageInterface
@@ -523,14 +447,6 @@ class Request extends \localzet\PSR7\Request
         }
     }
 
-    /**
-     * onUnexpectClose.
-     * @throws Throwable
-     */
-    public function onUnexpectClose()
-    {
-        $this->emitError(new Exception('Connection closed'));
-    }
 
     /**
      * @return int
@@ -540,24 +456,7 @@ class Request extends \localzet\PSR7\Request
         return ('https' === $this->getUri()->getScheme()) ? 443 : 80;
     }
 
-    /**
-     * detachConnection.
-     *
-     * @return void
-     * @throws Throwable
-     * @throws Throwable
-     * @throws Throwable
-     */
-    public function detachConnection()
-    {
-        $this->cleanConnection();
-        // 不是连接池的连接则断开
-        if ($this->_selfConnection) {
-            $this->_connection->close();
-            return;
-        }
-        $this->_writeable = true;
-    }
+
 
     /**
      * @return AsyncTcpConnection|null
@@ -568,31 +467,35 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * attachConnection.
-     *
-     * @param $connection AsyncTcpConnection
-     * @return $this
+     * @return void
+     * @throws Throwable
+     * @throws Throwable
+     * @throws Throwable
      */
-    public function attachConnection(AsyncTcpConnection $connection): static
-    {
-        $connection->onConnect = array($this, 'onConnect');
-        $connection->onMessage = array($this, 'onMessage');
-        $connection->onError = array($this, 'onError');
-        $connection->onClose = array($this, 'onUnexpectClose');
-        $this->_connection = $connection;
-
-        return $this;
-    }
-
-    /**
-     * cleanConnection.
-     */
-    protected function cleanConnection()
+    public function detachConnection(): void
     {
         $connection = $this->_connection;
-        $connection->onConnect = $connection->onMessage = $connection->onError =
-        $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
+
+        $callbackMap = [
+            'onConnect',
+            'onWebSocketConnect',
+            'onMessage',
+            'onClose',
+            'onError',
+            'onBufferFull',
+            'onBufferDrain',
+        ];
+        foreach ($callbackMap as $name) {
+            $connection->$name = null;
+        }
+
         $this->_connection = null;
         $this->_emitter->removeAllListeners();
+
+        if ($this->_selfConnection) {
+            $this->_connection->close();
+            return;
+        }
+        $this->_writeable = true;
     }
 }
