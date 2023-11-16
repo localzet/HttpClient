@@ -16,45 +16,64 @@ namespace localzet\HTTP\AsyncClient;
 class Emitter
 {
     /**
-     * [event=>[[listener1, once?], [listener2,once?], ..], ..]
+     * Константы для обозначения типов слушателей
      */
-    protected $_eventListenerMap = array();
+    private const ONCE = true;
+    private const NOT_ONCE = false;
 
     /**
-     * On.
-     *
-     * @param $event_name
-     * @param $listener
-     * @return $this
+     * Массив для хранения слушателей событий
+     * @var array
      */
-    public function on($event_name, $listener): static
+    private array $_eventListenerMap = [];
+
+    /**
+     * Добавление слушателя, который будет вызываться при каждом событии
+     *
+     * @param string $event_name Имя события
+     * @param callable $listener Слушатель события
+     * @return self Возвращает текущий объект для цепочки вызовов
+     */
+    public function on(string $event_name, callable $listener): self
+    {
+        $this->addListener($event_name, $listener, self::NOT_ONCE);
+        return $this;
+    }
+
+    /**
+     * Добавление слушателя, который будет вызываться только один раз
+     *
+     * @param string $event_name Имя события
+     * @param callable $listener Слушатель события
+     * @return self Возвращает текущий объект для цепочки вызовов
+     */
+    public function once(string $event_name, callable $listener): self
+    {
+        $this->addListener($event_name, $listener, self::ONCE);
+        return $this;
+    }
+
+    /**
+     * Добавление слушателя события
+     *
+     * @param string $event_name Имя события
+     * @param callable $listener Слушатель события
+     * @param bool $once Определяет, будет ли слушатель вызываться только один раз
+     */
+    private function addListener(string $event_name, callable $listener, bool $once): void
     {
         $this->emit('newListener', $event_name, $listener);
-        $this->_eventListenerMap[$event_name][] = array($listener, 0);
-        return $this;
+        $this->_eventListenerMap[$event_name][] = [$listener, $once];
     }
 
     /**
-     * Once.
+     * Удаление слушателя события
      *
-     * @param $event_name
-     * @param $listener
-     * @return $this
+     * @param string $event_name Имя события
+     * @param callable $listener Слушатель события
+     * @return self Возвращает текущий объект для цепочки вызовов
      */
-    public function once($event_name, $listener): static
-    {
-        $this->_eventListenerMap[$event_name][] = array($listener, 1);
-        return $this;
-    }
-
-    /**
-     * RemoveListener.
-     *
-     * @param $event_name
-     * @param $listener
-     * @return $this
-     */
-    public function removeListener($event_name, $listener): static
+    public function removeListener(string $event_name, callable $listener): self
     {
         if (!isset($this->_eventListenerMap[$event_name])) {
             return $this;
@@ -72,16 +91,16 @@ class Emitter
     }
 
     /**
-     * RemoveAllListeners.
+     * Удаление всех слушателей события
      *
-     * @param null $event_name
-     * @return $this
+     * @param string|null $event_name Имя события
+     * @return self Возвращает текущий объект для цепочки вызовов
      */
-    public function removeAllListeners($event_name = null): static
+    public function removeAllListeners(?string $event_name = null): self
     {
         $this->emit('removeListener', $event_name);
         if (null === $event_name) {
-            $this->_eventListenerMap = array();
+            $this->_eventListenerMap = [];
             return $this;
         }
         unset($this->_eventListenerMap[$event_name]);
@@ -89,18 +108,17 @@ class Emitter
     }
 
     /**
+     * Получение слушателей события
      *
-     * Listeners.
-     *
-     * @param $event_name
-     * @return array
+     * @param string $event_name Имя события
+     * @return array Массив слушателей события
      */
-    public function listeners($event_name): array
+    public function listeners(string $event_name): array
     {
         if (empty($this->_eventListenerMap[$event_name])) {
-            return array();
+            return [];
         }
-        $listeners = array();
+        $listeners = [];
         foreach ($this->_eventListenerMap[$event_name] as $item) {
             $listeners[] = $item[0];
         }
@@ -108,12 +126,12 @@ class Emitter
     }
 
     /**
-     * Emit.
+     * Вызов события
      *
-     * @param null $event_name
-     * @return bool
+     * @param string|null $event_name Имя события
+     * @return bool Возвращает true, если событие было вызвано, иначе false
      */
-    public function emit($event_name = null): bool
+    public function emit(?string $event_name = null): bool
     {
         if (empty($event_name) || empty($this->_eventListenerMap[$event_name])) {
             return false;
