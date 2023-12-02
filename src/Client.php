@@ -21,19 +21,19 @@ namespace localzet\HTTP;
 class Client
 {
     protected $curlOptions = [
-        CURLOPT_AUTOREFERER => true, // Автоматически устанавливает поле Referer при переходе по ссылкам
-        CURLOPT_COOKIESESSION => true, // Инициализирует новую сессию cookie
-        CURLOPT_CERTINFO => true, // Включает вывод информации о сертификате в массиве информации cURL
-        CURLOPT_CONNECT_ONLY => true, // Позволяет приложению использовать сокет для дальнейших отправок
-        CURLOPT_CRLF => true, // Включает преобразование Unix-новых строк в CRLF-новые строки на Windows
-        CURLOPT_DISALLOW_USERNAME_IN_URL => true, // Отключает передачу имени пользователя и пароля в URL
-        CURLOPT_DNS_SHUFFLE_ADDRESSES => true, // Включает перемешивание IP-адресов DNS
-        CURLOPT_HAPROXYPROTOCOL => true, // Включает поддержку протокола HAProxy PROXY
-        CURLOPT_SSH_COMPRESSION => true, // Включает сжатие SSH
-        CURLOPT_DNS_USE_GLOBAL_CACHE => true, // Включает глобальный кэш DNS
-        CURLOPT_FAILONERROR => true, // Включает неудачное завершение при HTTP-коде >= 400
-        CURLOPT_SSL_FALSESTART => true, // Включает False Start в TLS-подключениях
-        CURLOPT_FILETIME => true, // Включает получение времени модификации удаленного документа
+        // CURLOPT_AUTOREFERER => true, // Автоматически устанавливает поле Referer при переходе по ссылкам
+        // CURLOPT_COOKIESESSION => true, // Инициализирует новую сессию cookie
+        // CURLOPT_CERTINFO => true, // Включает вывод информации о сертификате в массиве информации cURL
+        // CURLOPT_CONNECT_ONLY => true, // Позволяет приложению использовать сокет для дальнейших отправок
+        // CURLOPT_CRLF => true, // Включает преобразование Unix-новых строк в CRLF-новые строки на Windows
+        // CURLOPT_DISALLOW_USERNAME_IN_URL => true, // Отключает передачу имени пользователя и пароля в URL
+        // CURLOPT_DNS_SHUFFLE_ADDRESSES => true, // Включает перемешивание IP-адресов DNS
+        // CURLOPT_HAPROXYPROTOCOL => true, // Включает поддержку протокола HAProxy PROXY
+        // CURLOPT_SSH_COMPRESSION => true, // Включает сжатие SSH
+        // CURLOPT_DNS_USE_GLOBAL_CACHE => true, // Включает глобальный кэш DNS
+        // CURLOPT_FAILONERROR => true, // Включает неудачное завершение при HTTP-коде >= 400
+        // CURLOPT_SSL_FALSESTART => true, // Включает False Start в TLS-подключениях
+        // CURLOPT_FILETIME => true, // Включает получение времени модификации удаленного документа
 
         CURLOPT_TIMEOUT => 30, // Устанавливает максимальное время ожидания выполнения функций cURL
         CURLOPT_CONNECTTIMEOUT => 30, // Устанавливает количество секунд, которое cURL должен ждать при попытке подключения
