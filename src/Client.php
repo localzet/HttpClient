@@ -3,12 +3,12 @@
 /**
  * @package     FrameX (FX) HttpClient Plugin
  * @link        https://localzet.gitbook.io
- * 
+ *
  * @author      localzet <creator@localzet.ru>
- * 
- * @copyright   Copyright (c) 2018-2020 Zorin Projects 
+ *
+ * @copyright   Copyright (c) 2018-2020 Zorin Projects
  * @copyright   Copyright (c) 2020-2022 NONA Team
- * 
+ *
  * @license     https://www.localzet.ru/license GNU GPLv3 License
  */
 
@@ -91,20 +91,25 @@ class Client
             case 'PUT':
             case 'POST':
             case 'PATCH':
-                $body_content = $multipart ? $parameters : http_build_query($parameters);
-                if (
-                    isset($this->requestHeader['Content-Type'])
-                    && $this->requestHeader['Content-Type'] == 'application/json'
-                ) {
-                    $body_content = json_encode($parameters);
-                }
+            default:
 
                 if ($method === 'POST') {
                     $curlOptions[CURLOPT_POST] = true;
                 } else {
                     $curlOptions[CURLOPT_CUSTOMREQUEST] = $method;
                 }
-                $curlOptions[CURLOPT_POSTFIELDS] = $body_content;
+
+                if ($parameters) {
+                    $body_content = $multipart ? $parameters : http_build_query($parameters);
+                    if (
+                        isset($this->requestHeader['Content-Type'])
+                        && $this->requestHeader['Content-Type'] == 'application/json'
+                    ) {
+                        $body_content = json_encode($parameters);
+                    }
+                    $curlOptions[CURLOPT_POSTFIELDS] = $body_content;
+                }
+
                 break;
         }
 
