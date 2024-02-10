@@ -1,0 +1,44 @@
+<component name="CopyrightManager">
+  <settings default="Zorin Projects">
+    <module2copyright>
+      <element module="All" copyright="Zorin Projects" />
+    </module2copyright>
+    <LanguageOptions name="DTD">
+      <option name="fileTypeOverride" value="3" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="HTML">
+      <option name="fileTypeOverride" value="3" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="SVG">
+      <option name="fileTypeOverride" value="3" />
+    </LanguageOptions>
+    <LanguageOptions name="Sass">
+      <option name="fileTypeOverride" value="3" />
+    </LanguageOptions>
+    <LanguageOptions name="Shell Script">
+      <option name="fileTypeOverride" value="3" />
+    </LanguageOptions>
+    <LanguageOptions name="TypeScript">
+      <option name="separateBefore" value="true" />
+      <option name="lenBefore" value="1" />
+    </LanguageOptions>
+    <LanguageOptions name="Vue.js">
+      <option name="fileTypeOverride" value="3" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="XHTML">
+      <option name="fileTypeOverride" value="3" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="XML">
+      <option name="fileTypeOverride" value="3" />
+      <option name="prefixLines" value="false" />
+    </LanguageOptions>
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="separateBefore" value="true" />
+      <option name="lenBefore" value="1" />
+    </LanguageOptions>
+  </settings>
+</component>

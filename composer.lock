@@ -1,0 +1,197 @@
+{
+  "_readme": [
+    "This file locks the dependencies of your project to a known state",
+    "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+    "This file is @generated automatically"
+  ],
+  "content-hash": "b0f7f1e9099fe365b018aa231f5daf57",
+  "packages": [
+    {
+      "name": "localzet/psr",
+      "version": "v1.1.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/localzet/PSR.git",
+        "reference": "104c2a987c09785c1ce3bf7addfc34274c025519"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/localzet/PSR/zipball/104c2a987c09785c1ce3bf7addfc34274c025519",
+        "reference": "104c2a987c09785c1ce3bf7addfc34274c025519",
+        "shasum": ""
+      },
+      "require": {
+        "php": "^8.2"
+      },
+      "type": "library",
+      "autoload": {
+        "psr-4": {
+          "localzet\\PSR\\": "src"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "AGPL-3.0-or-later"
+      ],
+      "authors": [
+        {
+          "name": "Ivan Zorin",
+          "email": "creator@localzet.com",
+          "homepage": "https://github.com/localzet",
+          "role": "Developer"
+        }
+      ],
+      "description": "Localzet PSR Component for projects",
+      "keywords": [
+        "localzet",
+        "psr"
+      ],
+      "support": {
+        "email": "support@localzet.com",
+        "issues": "https://github.com/localzet/PSR/issues",
+        "source": "https://github.com/localzet/PSR"
+      },
+      "time": "2023-08-16T20:55:44+00:00"
+    },
+    {
+      "name": "localzet/psr7",
+      "version": "v3.0.0",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/localzet/PSR-7.git",
+        "reference": "d1ad2ea396102b08560e05f12d1c984af45c2d13"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/localzet/PSR-7/zipball/d1ad2ea396102b08560e05f12d1c984af45c2d13",
+        "reference": "d1ad2ea396102b08560e05f12d1c984af45c2d13",
+        "shasum": ""
+      },
+      "require": {
+        "localzet/psr": "^1.0",
+        "localzet/server": ">=4.0",
+        "php": "^8.2"
+      },
+      "type": "library",
+      "extra": {
+        "branch-alias": {
+          "dev-master": "1.5-dev"
+        }
+      },
+      "autoload": {
+        "files": [
+          "src/functions_include.php"
+        ],
+        "psr-4": {
+          "localzet\\PSR7\\": "src/"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "GPL-3.0-only"
+      ],
+      "authors": [
+        {
+          "name": "localzet",
+          "email": "creator@localzet.ru",
+          "homepage": "https://www.localzet.ru",
+          "role": "Developer"
+        }
+      ],
+      "description": "HTTP message interfaces",
+      "keywords": [
+        "localzet"
+      ],
+      "support": {
+        "docs": "https://localzet.gitbook.io",
+        "email": "support@localzet.ru",
+        "source": "https://github.com/localzet/PSR-7/tree/v3.0.0"
+      },
+      "funding": [
+        {
+          "url": "https://www.tinkoff.ru/cf/Ad5MBNhodod",
+          "type": "other"
+        }
+      ],
+      "abandoned": true,
+      "time": "2023-08-16T21:30:58+00:00"
+    },
+    {
+      "name": "localzet/server",
+      "version": "v4.0.8",
+      "source": {
+        "type": "git",
+        "url": "https://github.com/localzet/Server.git",
+        "reference": "9cbd6dd782b163d23f9061f3b76bcb6edff26fa5"
+      },
+      "dist": {
+        "type": "zip",
+        "url": "https://api.github.com/repos/localzet/Server/zipball/9cbd6dd782b163d23f9061f3b76bcb6edff26fa5",
+        "reference": "9cbd6dd782b163d23f9061f3b76bcb6edff26fa5",
+        "shasum": ""
+      },
+      "require": {
+        "ext-json": "*",
+        "localzet/psr": ">=1.0",
+        "php": ">=8.2"
+      },
+      "suggest": {
+        "ext-ev": "For better performance",
+        "ext-event": "For better performance",
+        "ext-pcntl": "For Linux",
+        "ext-posix": "For Linux",
+        "ext-redis": "For Redis Session Handler",
+        "ext-sockets": "For better performance",
+        "ext-uv": "For better performance",
+        "mongodb/mongodb": "For Mongo Session Handler"
+      },
+      "type": "library",
+      "autoload": {
+        "psr-4": {
+          "localzet\\": "src"
+        }
+      },
+      "notification-url": "https://packagist.org/downloads/",
+      "license": [
+        "AGPL-3.0-or-later"
+      ],
+      "authors": [
+        {
+          "name": "Ivan Zorin",
+          "email": "creator@localzet.com",
+          "homepage": "https://www.localzet.com",
+          "role": "Developer"
+        }
+      ],
+      "description": "Localzet Server - Асинхронный event-based сервер на PHP.",
+      "homepage": "https://www.localzet.com/webcore",
+      "keywords": [
+        "localzet"
+      ],
+      "support": {
+        "email": "support@localzet.com",
+        "issues": "https://github.com/localzet/server/issues",
+        "source": "https://github.com/localzet/server"
+      },
+      "funding": [
+        {
+          "url": "https://www.tinkoff.ru/cf/Ad5MBNhodod",
+          "type": "other"
+        }
+      ],
+      "time": "2023-07-25T21:11:14+00:00"
+    }
+  ],
+  "packages-dev": [],
+  "aliases": [],
+  "minimum-stability": "stable",
+  "stability-flags": [],
+  "prefer-stable": false,
+  "prefer-lowest": false,
+  "platform": {
+    "php": "^8.2",
+    "ext-json": "*"
+  },
+  "platform-dev": [],
+  "plugin-api-version": "2.2.0"
+}
