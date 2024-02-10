@@ -4,7 +4,7 @@ composer.phar
 
 # Фиксируйте файл блокировки вашего приложения https://getcomposer.org/doc/01-basic-usage.md#commit-your-composer-lock-file-to-version-control
 # Вы можете выбрать игнорирование файла блокировки библиотеки http://getcomposer.org/doc/02-libraries.md#lock-file
-# composer.lock
+composer.lock
 
 ### dotenv ###
 .env
@@ -34,6 +34,8 @@ composer.phar
 .idea/**/dynamic.xml
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
+.idea/**/webServers.xml
+.idea/**/deployment.xml
 
 # Gradle
 .idea/**/gradle.xml
