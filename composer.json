@@ -25,6 +25,7 @@
   ],
   "support": {
     "email": "support@localzet.com",
+    "issues": "https://github.com/localzet/HttpClient/issues",
     "source": "https://github.com/localzet/HttpClient"
   },
   "require": {
