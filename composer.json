@@ -32,8 +32,9 @@
     "php": "^8.2",
     "ext-curl": "*",
     "ext-json": "*",
+    "localzet/server": "^4.1",
     "localzet/psr7": "^3.0",
-    "localzet/server": ">=4.0"
+    "psr/http-message": "^2.0"
   },
   "autoload": {
     "psr-4": {

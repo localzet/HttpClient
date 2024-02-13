@@ -28,7 +28,7 @@ namespace localzet\HTTP\AsyncClient;
 use AllowDynamicProperties;
 use Exception;
 use InvalidArgumentException;
-use localzet\PSR\Http\Message\MessageInterface;
+use Psr\Http\Message\MessageInterface;
 use localzet\PSR7\Uri;
 use localzet\PSR7\UriResolver;
 use localzet\Server\Connection\AsyncTcpConnection;
