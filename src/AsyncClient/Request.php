@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @package     HTTP Client
  * @link        https://github.com/localzet/HttpClient
@@ -137,6 +138,17 @@ class Request extends \localzet\PSR7\Request
      */
     public function on($event, $callback)
     {
+        $this->_emitter->on($event, $callback);
+        return $this;
+    }
+
+    /**
+     * @param $event
+     * @param $callback
+     * @return $this
+     */
+    public function once($event, $callback)
+    {
         $this->_emitter->once($event, $callback);
         return $this;
     }
@@ -232,6 +244,15 @@ class Request extends \localzet\PSR7\Request
 
         $this->getBody()->write($data);
         return $this;
+    }
+
+    /**
+     * @return void
+     */
+    public function writeToResponse($buffer)
+    {
+        $this->emit('progress', $buffer);
+        $this->_response->getBody()->write($buffer);
     }
 
     /**
@@ -365,8 +386,10 @@ class Request extends \localzet\PSR7\Request
     {
         $status_code = $this->_response->getStatusCode();
         $content_length = $this->_response->getHeaderLine('Content-Length');
-        if ($content_length === '0' || ($status_code >= 100 && $status_code < 200)
-            || $status_code === 204 || $status_code === 304) {
+        if (
+            $content_length === '0' || ($status_code >= 100 && $status_code < 200)
+            || $status_code === 204 || $status_code === 304
+        ) {
             $this->emitSuccess();
             return;
         }
@@ -398,7 +421,7 @@ class Request extends \localzet\PSR7\Request
     {
         try {
             $body = $this->_response->getBody();
-            $body->write($data);
+            $this->writeToResponse($data);
             if ($this->_expectedLength) {
                 $recv_length = $body->getSize();
                 if ($this->_expectedLength <= $recv_length) {
@@ -418,7 +441,7 @@ class Request extends \localzet\PSR7\Request
     public function handleChunkedData($connection, $buffer)
     {
         try {
-            if ($buffer) {
+            if ($buffer !== '') {
                 $this->_chunkedData .= $buffer;
             }
 
@@ -453,7 +476,7 @@ class Request extends \localzet\PSR7\Request
             }
             // Get chunked data
             if ($recv_len >= $this->_chunkedLength) {
-                $this->_response->getBody()->write(substr($this->_chunkedData, 0, $this->_chunkedLength - 2));
+                $this->writeToResponse(substr($this->_chunkedData, 0, $this->_chunkedLength - 2));
                 $this->_chunkedData = substr($this->_chunkedData, $this->_chunkedLength);
                 $this->_chunkedLength = 0;
                 $this->handleChunkedData($connection, '');
@@ -499,7 +522,8 @@ class Request extends \localzet\PSR7\Request
      */
     public static function redirect($request, $response)
     {
-        if (!str_starts_with($response->getStatusCode(), '3')
+        if (
+            !str_starts_with($response->getStatusCode(), '3')
             || !$response->hasHeader('Location')
         ) {
             return false;
@@ -596,7 +620,7 @@ class Request extends \localzet\PSR7\Request
     {
         $connection = $this->_connection;
         $connection->onConnect = $connection->onMessage = $connection->onError =
-        $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
+            $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
         $this->_connection = null;
         $this->_emitter->removeAllListeners();
     }
