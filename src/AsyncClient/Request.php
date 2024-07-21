@@ -103,6 +103,13 @@ class Request extends \localzet\PSR7\Request
      * Опции для этого запроса.
      */
     protected array $_options = [
+        'headers' => [
+            'Accept' => '*/*',
+            'Cache-Control' => 'max-age=0',
+            'Connection' => 'keep-alive',
+            'Expect' => '',
+            'Pragma' => '',
+        ],
         'allow_redirects' => [
             'max' => 5
         ]
@@ -362,7 +369,7 @@ class Request extends \localzet\PSR7\Request
     {
         try {
             $this->doSend();
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->emitError($e);
         }
     }
