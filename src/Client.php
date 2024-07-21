@@ -143,7 +143,7 @@ class Client
             'headers' => $this->requestHeader,
         ]);
 
-        $this->responseBody = $response;
+        $this->responseBody = $response->getBody();
         $this->responseHttpCode = $response->getStatusCode();
 
 //        curl_close($curl);
