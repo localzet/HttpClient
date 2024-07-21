@@ -89,62 +89,64 @@ class Client
             'headers' => $this->requestHeader,
         ];
 
-        $curl = curl_init();
+        $client = new AsyncClient();
+//        $curl = curl_init();
+//
+//        // Объедините опции cURL по умолчанию с любыми пользовательскими опциями
+//        $curlOptions = $curlOptions + $this->curlOptions;
+//
+//        switch ($method) {
+//            case 'GET':
+//            case 'DELETE':
+//                $uri .= (strpos($uri, '?') ? '&' : '?') . http_build_query($parameters);
+//                if ($method === 'DELETE') {
+//                    $curlOptions[CURLOPT_CUSTOMREQUEST] = 'DELETE';
+//                }
+//                break;
+//            case 'PUT':
+//            case 'POST':
+//            case 'PATCH':
+//            default:
+//
+//                if ($method === 'POST') {
+//                    $curlOptions[CURLOPT_POST] = true;
+//                } else {
+//                    $curlOptions[CURLOPT_CUSTOMREQUEST] = $method;
+//                }
+//
+//                if ($parameters) {
+//                    $body_content = $multipart ? $parameters : http_build_query($parameters);
+//                    if (
+//                        isset($this->requestHeader['Content-Type'])
+//                        && $this->requestHeader['Content-Type'] == 'application/json'
+//                    ) {
+//                        $body_content = json_encode($parameters);
+//                    }
+//                    $curlOptions[CURLOPT_POSTFIELDS] = $body_content;
+//                }
+//
+//                break;
+//        }
+//
+//        $curlOptions[CURLOPT_URL] = $uri;
+//        $curlOptions[CURLOPT_HTTPHEADER] = $this->prepareRequestHeaders();
+//        $curlOptions[CURLOPT_HEADERFUNCTION] = [$this, 'fetchResponseHeader'];
+//
+//        foreach ($curlOptions as $key => $value) {
+//            curl_setopt($curl, $key, $value);
+//        }
 
-        // Объедините опции cURL по умолчанию с любыми пользовательскими опциями
-        $curlOptions = $curlOptions + $this->curlOptions;
-
-        switch ($method) {
-            case 'GET':
-            case 'DELETE':
-                $uri .= (strpos($uri, '?') ? '&' : '?') . http_build_query($parameters);
-                if ($method === 'DELETE') {
-                    $curlOptions[CURLOPT_CUSTOMREQUEST] = 'DELETE';
-                }
-                break;
-            case 'PUT':
-            case 'POST':
-            case 'PATCH':
-            default:
-
-                if ($method === 'POST') {
-                    $curlOptions[CURLOPT_POST] = true;
-                } else {
-                    $curlOptions[CURLOPT_CUSTOMREQUEST] = $method;
-                }
-
-                if ($parameters) {
-                    $body_content = $multipart ? $parameters : http_build_query($parameters);
-                    if (
-                        isset($this->requestHeader['Content-Type'])
-                        && $this->requestHeader['Content-Type'] == 'application/json'
-                    ) {
-                        $body_content = json_encode($parameters);
-                    }
-                    $curlOptions[CURLOPT_POSTFIELDS] = $body_content;
-                }
-
-                break;
-        }
-
-        $curlOptions[CURLOPT_URL] = $uri;
-        $curlOptions[CURLOPT_HTTPHEADER] = $this->prepareRequestHeaders();
-        $curlOptions[CURLOPT_HEADERFUNCTION] = [$this, 'fetchResponseHeader'];
-
-//        curl_setopt_array($curl, $curlOptions);
-
-        foreach ($curlOptions as $key => $value) {
-            curl_setopt($curl, $key, $value);
-        }
-
-        $response = curl_exec($curl);
+//        $response = curl_exec($curl);
+        $response = $client->request($uri, [
+            'method' => $method,
+            'data' => $parameters,
+            'headers' => $this->requestHeader,
+        ]);
 
         $this->responseBody = $response;
-        $this->responseHttpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        $this->responseClientError = curl_error($curl);
-        $this->responseClientInfo = curl_getinfo($curl);
+        $this->responseHttpCode = $response->getStatusCode();
 
-        curl_close($curl);
+//        curl_close($curl);
 
         return $this->responseBody;
     }
