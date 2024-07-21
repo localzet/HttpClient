@@ -136,7 +136,7 @@ class Request extends \localzet\PSR7\Request
      */
     public function setOptions(array $options): static
     {
-        $this->_options = array_merge($this->_options, $options);
+        $this->_options = array_merge_recursive($this->_options, $options);
         return $this;
     }
 
