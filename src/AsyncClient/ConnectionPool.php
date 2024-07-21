@@ -72,7 +72,7 @@ class ConnectionPool extends Emitter
      */
     public function __construct(array $option = [])
     {
-        $this->_options = array_merge($this->_options, $option);
+        $this->_options = array_merge_recursive($this->_options, $option);
     }
 
     /**
