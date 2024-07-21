@@ -29,10 +29,10 @@
     "source": "https://github.com/localzet/HttpClient"
   },
   "require": {
-    "php": "^8.2",
+    "php": "^8.0",
     "ext-curl": "*",
     "ext-json": "*",
-    "localzet/server": "^4.1",
+    "localzet/server": "^4.2",
     "localzet/psr7": "^3.0",
     "psr/http-message": "^2.0"
   },

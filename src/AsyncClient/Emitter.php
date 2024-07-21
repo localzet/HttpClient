@@ -48,6 +48,7 @@ class Emitter
      */
     public function on(string $event_name, callable $listener): self
     {
+        $this->emit('newListener', $event_name, $listener);
         $this->addListener($event_name, $listener, self::NOT_ONCE);
         return $this;
     }
@@ -74,7 +75,6 @@ class Emitter
      */
     private function addListener(string $event_name, callable $listener, bool $once): void
     {
-        $this->emit('newListener', $event_name, $listener);
         $this->_eventListenerMap[$event_name][] = [$listener, $once];
     }
 

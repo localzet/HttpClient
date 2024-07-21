@@ -32,30 +32,33 @@ use localzet\Timer;
 use Throwable;
 
 /**
- * Class ConnectionPool
- * @package localzet\HTTP
+ * Класс ConnectionPool представляет собой пул соединений, который используется для управления множеством соединений в асинхронном клиенте HTTP.
  */
 class ConnectionPool extends Emitter
 {
     /**
      * @var array
+     * Массив для хранения свободных соединений.
      */
-    protected $_idle = [];
+    protected array $_idle = [];
 
     /**
      * @var array
+     * Массив для хранения используемых соединений.
      */
-    protected $_using = [];
+    protected array $_using = [];
 
     /**
      * @var int
+     * Идентификатор таймера для этого пула соединений.
      */
-    protected $_timer = 0;
+    protected int $_timer = 0;
 
     /**
      * @var array
+     * Опции для этого пула соединений.
      */
-    protected $_options = [
+    protected array $_options = [
         'max_conn_per_addr' => 128,
         'keepalive_timeout' => 15,
         'connect_timeout' => 30,
@@ -63,24 +66,24 @@ class ConnectionPool extends Emitter
     ];
 
     /**
-     * ConnectionPool constructor.
+     * Конструктор пула соединений.
      *
-     * @param array $option
+     * @param array $option Опции для пула соединений.
      */
-    public function __construct($option = [])
+    public function __construct(array $option = [])
     {
         $this->_options = array_merge($this->_options, $option);
     }
 
     /**
-     * Fetch an idle connection.
+     * Извлекает свободное соединение из пула.
      *
-     * @param $address
-     * @param bool $ssl
-     * @return mixed
-     * @throws Throwable
+     * @param string $address Адрес для извлечения соединения.
+     * @param bool $ssl Флаг, указывающий, следует ли использовать SSL для соединения.
+     * @return mixed|void Возвращает свободное соединение, если оно доступно, иначе ничего не возвращает.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при извлечении соединения.
      */
-    public function fetch($address, $ssl = false)
+    public function fetch(string $address, bool $ssl = false)
     {
         $max_con = $this->_options['max_conn_per_addr'];
         if (!empty($this->_using[$address])) {
@@ -103,11 +106,11 @@ class ConnectionPool extends Emitter
     }
 
     /**
-     * Recycle an connection.
+     * Возвращает соединение обратно в пул.
      *
-     * @param $connection AsyncTcpConnection
+     * @param $connection AsyncTcpConnection Соединение для возврата в пул.
      */
-    public function recycle($connection)
+    public function recycle(AsyncTcpConnection $connection): void
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -126,11 +129,11 @@ class ConnectionPool extends Emitter
     }
 
     /**
-     * Delete a connection.
+     * Удаляет соединение из пула.
      *
-     * @param $connection
+     * @param AsyncTcpConnection $connection Соединение для удаления.
      */
-    public function delete($connection)
+    public function delete(AsyncTcpConnection $connection): void
     {
         $connection_id = $connection->id;
         $address = $connection->address;
@@ -145,10 +148,10 @@ class ConnectionPool extends Emitter
     }
 
     /**
-     * Close timeout connection.
-     * @throws Throwable
+     * Закрывает соединения, которые превышают время ожидания.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при закрытии соединений.
      */
-    public function closeTimeoutConnection()
+    public function closeTimeoutConnection(): void
     {
         if (empty($this->_idle) && empty($this->_using)) {
             Timer::del($this->_timer);
@@ -217,23 +220,23 @@ class ConnectionPool extends Emitter
     }
 
     /**
-     * Create a connection.
+     * Создает новое соединение для пула.
      *
-     * @param $address
-     * @param bool $ssl
-     * @return AsyncTcpConnection
-     * @throws Exception
-     * @throws Throwable
+     * @param string $address Адрес для создания соединения.
+     * @param bool $ssl Флаг, указывающий, следует ли использовать SSL для соединения.
+     * @return AsyncTcpConnection Возвращает новое соединение.
+     * @throws Exception Выбрасывает исключение, если происходит ошибка при создании соединения.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при создании соединения.
      */
-    protected function create($address, $ssl = false)
+    protected function create(string $address, bool $ssl = false): AsyncTcpConnection
     {
-        $context = array(
-            'ssl' => array(
+        $context = [
+            'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
                 'allow_self_signed' => true
-            )
-        );
+            ]
+        ];
         if (!empty($this->_options['context'])) {
             $context = $this->_options['context'];
         }
@@ -254,9 +257,9 @@ class ConnectionPool extends Emitter
     }
 
     /**
-     * Create Timer.
+     * Создает таймер для проверки состояния соединений в пуле.
      */
-    protected function tryToCreateConnectionCheckTimer()
+    protected function tryToCreateConnectionCheckTimer(): void
     {
         if (!$this->_timer) {
             $this->_timer = Timer::add(1, [$this, 'closeTimeoutConnection']);

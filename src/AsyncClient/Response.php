@@ -25,13 +25,10 @@
 
 namespace localzet\HTTP\AsyncClient;
 
-use AllowDynamicProperties;
-
 /**
- * Class Response
- * @package localzet\HTTP
+ * Класс Response представляет собой ответ на асинхронный HTTP-запрос. Он наследует от базового класса Response в PSR7.
  */
-#[AllowDynamicProperties]
+#[\AllowDynamicProperties]
 class Response extends \localzet\PSR7\Response
 {
 

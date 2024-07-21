@@ -32,7 +32,7 @@ namespace localzet\HTTP;
  */
 class Client
 {
-    protected $curlOptions = [
+    protected array $curlOptions = [
 //        CURLOPT_AUTOREFERER => true, // Автоматически устанавливает поле Referer при переходе по ссылкам
 //        CURLOPT_COOKIESESSION => true, // Инициализирует новую сессию cookie
 //        CURLOPT_CERTINFO => true, // Включает вывод информации о сертификате в массиве информации cURL
@@ -61,8 +61,8 @@ class Client
     ];
 
 
-    protected $requestArguments = [];
-    protected $requestHeader = [
+    protected array $requestArguments = [];
+    protected array $requestHeader = [
         'Accept' => '*/*',
         'Cache-Control' => 'max-age=0',
         'Connection' => 'keep-alive',
@@ -70,13 +70,13 @@ class Client
         'Pragma' => '',
     ];
 
-    protected $responseBody = '';
-    protected $responseHeader = [];
-    protected $responseHttpCode = 0;
-    protected $responseClientError = null;
-    protected $responseClientInfo = [];
+    protected string $responseBody = '';
+    protected array $responseHeader = [];
+    protected int $responseHttpCode = 0;
+    protected mixed $responseClientError = null;
+    protected array $responseClientInfo = [];
 
-    public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false, $curlOptions = [])
+    public function request($uri, $method = 'GET', $parameters = [], $headers = [], $multipart = false, $curlOptions = []): bool|string
     {
         $this->requestHeader = array_replace($this->requestHeader, (array)$headers);
 
@@ -147,7 +147,7 @@ class Client
         return $this->responseBody;
     }
 
-    public function getResponse()
+    public function getResponse(): array
     {
         return [
             'request' => $this->getRequestArguments(),
@@ -163,17 +163,17 @@ class Client
         ];
     }
 
-    public function getResponseBody()
+    public function getResponseBody(): string
     {
         return $this->responseBody;
     }
 
-    public function getResponseHeader()
+    public function getResponseHeader(): array
     {
         return $this->responseHeader;
     }
 
-    public function getResponseHttpCode()
+    public function getResponseHttpCode(): int
     {
         return $this->responseHttpCode;
     }
@@ -183,17 +183,17 @@ class Client
         return $this->responseClientError;
     }
 
-    protected function getResponseClientInfo()
+    protected function getResponseClientInfo(): array
     {
         return $this->responseClientInfo;
     }
 
-    protected function getRequestArguments()
+    protected function getRequestArguments(): array
     {
         return $this->requestArguments;
     }
 
-    protected function fetchResponseHeader($curl, $header)
+    protected function fetchResponseHeader($curl, $header): int
     {
         $pos = strpos($header, ':');
 
@@ -208,7 +208,7 @@ class Client
         return strlen($header);
     }
 
-    protected function prepareRequestHeaders()
+    protected function prepareRequestHeaders(): array
     {
         $headers = [];
 

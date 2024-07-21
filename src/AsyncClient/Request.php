@@ -26,10 +26,10 @@
 
 namespace localzet\HTTP\AsyncClient;
 
-use AllowDynamicProperties;
 use Exception;
 use InvalidArgumentException;
-use Psr\Http\Message\MessageInterface;
+use localzet\PSR\Http\Message\MessageInterface;
+use localzet\PSR7\MultipartStream;
 use localzet\PSR7\Uri;
 use localzet\PSR7\UriResolver;
 use localzet\Server\Connection\AsyncTcpConnection;
@@ -39,173 +39,190 @@ use function localzet\PSR7\rewind_body;
 use function localzet\PSR7\str;
 
 /**
- * Class Request
- * @package localzet\HTTP
+ * Класс Request представляет собой запрос, который может быть отправлен асинхронным клиентом HTTP. Он наследует от базового класса Request в PSR7.
  */
-#[AllowDynamicProperties]
+#[\AllowDynamicProperties]
 class Request extends \localzet\PSR7\Request
 {
     /**
-     * @var AsyncTcpConnection
+     * @var AsyncTcpConnection|null
+     * Соединение, используемое для отправки этого запроса.
      */
-    protected $_connection = null;
+    protected ?AsyncTcpConnection $_connection = null;
 
     /**
-     * @var Emitter
+     * @var Emitter|null
+     * Эмиттер событий для этого запроса.
      */
-    protected $_emitter = null;
+    protected ?Emitter $_emitter = null;
 
     /**
-     * @var Response
+     * @var Response|null
+     * Ответ на этот запрос.
      */
-    protected $_response = null;
-
-    /**
-     * @var string
-     */
-    protected $_recvBuffer = '';
-
-    /**
-     * @var int
-     */
-    protected $_expectedLength = 0;
-
-    /**
-     * @var int
-     */
-    protected $_chunkedLength = 0;
+    protected ?Response $_response = null;
 
     /**
      * @var string
+     * Буфер для приема данных ответа.
      */
-    protected $_chunkedData = '';
+    protected string $_recvBuffer = '';
+
+    /**
+     * @var int
+     * Ожидаемая длина ответа.
+     */
+    protected int $_expectedLength = 0;
+
+    /**
+     * @var int
+     * Длина чанка в ответе.
+     */
+    protected int $_chunkedLength = 0;
+
+    /**
+     * @var string
+     * Данные чанка в ответе.
+     */
+    protected string $_chunkedData = '';
 
     /**
      * @var bool
+     * Флаг, указывающий, можно ли записывать в этот запрос.
      */
-    protected $_writeable = true;
+    protected bool $_writeable = true;
 
     /**
      * @var bool
+     * Флаг, указывающий, является ли это соединение самостоятельным.
      */
-    protected $_selfConnection = false;
+    protected bool $_selfConnection = false;
 
     /**
      * @var array
+     * Опции для этого запроса.
      */
-    protected $_options = [
+    protected array $_options = [
         'allow_redirects' => [
             'max' => 5
         ]
     ];
 
     /**
-     * Request constructor.
-     * @param string $url
+     * Конструктор запроса.
+     * @param string $url URL-адрес для запроса.
      */
-    public function __construct($url)
+    public function __construct(string $url)
     {
         $this->_emitter = new Emitter();
         $headers = [
             'User-Agent' => 'localzet/http',
             'Connection' => 'keep-alive'
         ];
-        parent::__construct('GET', $url, $headers, '', '1.1');
+        parent::__construct('GET', $url, $headers, '');
     }
 
     /**
-     * @param $options
-     * @return $this
+     * Устанавливает опции для этого запроса.
+     * @param array $options Опции для установки.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function setOptions($options)
+    public function setOptions(array $options): static
     {
         $this->_options = array_merge($this->_options, $options);
         return $this;
     }
 
     /**
-     * @return array
+     * Получает опции этого запроса.
+     * @return array Возвращает массив опций.
      */
-    public function getOptions()
+    public function getOptions(): array
     {
         return $this->_options;
     }
 
     /**
-     * @param $event
-     * @param $callback
-     * @return $this
+     * Добавляет обработчик событий для данного события.
+     * @param string $event Событие для добавления обработчика.
+     * @param callable $callback Обработчик для добавления.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function on($event, $callback)
+    public function on(string $event, callable $callback): static
     {
         $this->_emitter->on($event, $callback);
         return $this;
     }
 
     /**
-     * @param $event
-     * @param $callback
-     * @return $this
+     * Добавляет одноразовый обработчик событий для данного события.
+     * @param string $event Событие для добавления обработчика.
+     * @param callable $callback Обработчик для добавления.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function once($event, $callback)
+    public function once(string $event, callable $callback): static
     {
         $this->_emitter->once($event, $callback);
         return $this;
     }
 
     /**
-     * @param $event
+     * Вызывает все обработчики для данного события.
+     * @param string $event Событие для вызова обработчиков.
      */
-    public function emit($event)
+    public function emit(string $event): void
     {
         $args = func_get_args();
-        call_user_func_array(array($this->_emitter, 'emit'), $args);
+        call_user_func_array([$this->_emitter, 'emit'], $args);
     }
 
     /**
-     * @param $event
-     * @param $listener
-     * @return $this
+     * Удаляет обработчик событий для данного события.
+     * @param string $event Событие для удаления обработчика.
+     * @param callable $listener Обработчик для удаления.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function removeListener($event, $listener)
+    public function removeListener(string $event, callable $listener): static
     {
         $this->_emitter->removeListener($event, $listener);
         return $this;
     }
 
     /**
-     * @param null $event
-     * @return $this
+     * Удаляет все обработчики событий для данного события.
+     * @param string|null $event Событие для удаления обработчиков. Если не указано, удаляются все обработчики.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function removeAllListeners($event = null)
+    public function removeAllListeners(?string $event = null): static
     {
         $this->_emitter->removeAllListeners($event);
         return $this;
     }
 
     /**
-     * @param $event
-     * @return $this
+     * Получает обработчики событий для данного события.
+     * @param string $event Событие для получения обработчиков.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function listeners($event)
+    public function listeners(string $event): static
     {
         $this->_emitter->listeners($event);
         return $this;
     }
 
     /**
-     * Connect.
-     * @throws Throwable
-     * @throws Exception
+     * Подключается к серверу для отправки этого запроса.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при подключении.
+     * @throws Exception Выбрасывает исключение, если происходит ошибка при подключении.
      */
-    protected function connect()
+    protected function connect(): void
     {
         $host = $this->getUri()->getHost();
         $port = $this->getUri()->getPort();
         if (!$port) {
             $port = $this->getDefaultPort();
         }
-        $context = array();
+        $context = [];
         if (!empty($this->_options['context'])) {
             $context = $this->_options['context'];
         }
@@ -223,23 +240,30 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param string $data
-     * @return $this
-     * @throws Throwable
+     * Записывает данные в тело этого запроса.
+     * @param string $data Данные для записи.
+     * @return $this Возвращает текущий объект запроса.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при записи данных.
      */
-    public function write($data = '')
+    public function write(string $data = ''): static
     {
         if (!$this->writeable()) {
             $this->emitError(new Exception('Request pending and can not send request again'));
             return $this;
         }
 
-        if (empty($data) && $data !== '0' && $data !== 0) {
+        if (empty($data) && $data !== '0') {
             return $this;
         }
 
         if (is_array($data)) {
-            $data = http_build_query($data, '', '&');
+            if (isset($data['multipart'])) {
+                $multipart = new MultipartStream($data['multipart']);
+                $this->withHeader('Content-Type', 'multipart/form-data; boundary=' . $multipart->getBoundary());
+                $data = $multipart;
+            } else {
+                $data = http_build_query($data, '', '&');
+            }
         }
 
         $this->getBody()->write($data);
@@ -247,30 +271,22 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @return void
+     * Записывает данные в ответ на этот запрос.
+     * @param string $buffer Буфер данных для записи.
      */
-    public function writeToResponse($buffer)
+    public function writeToResponse(string $buffer): void
     {
         $this->emit('progress', $buffer);
         $this->_response->getBody()->write($buffer);
     }
 
     /**
-     * @param string $data
-     * @throws Throwable
+     * Завершает этот запрос, отправляя его и все оставшиеся данные.
+     * @param string $data Данные для отправки.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при отправке запроса.
      */
-    public function end($data = '')
+    public function end(string $data = ''): void
     {
-        if (($data || $data === '0' || $data === 0) || $this->getBody()->getSize()) {
-            if (isset($this->_options['headers'])) {
-                $headers = array_change_key_case($this->_options['headers']);
-                if (!isset($headers['content-type'])) {
-                    $this->withHeader('Content-Type', 'application/x-www-form-urlencoded');
-                }
-            } else {
-                $this->withHeader('Content-Type', 'application/x-www-form-urlencoded');
-            }
-        }
         if (isset($this->_options['version'])) {
             $this->withProtocolVersion($this->_options['version']);
         }
@@ -295,11 +311,16 @@ class Request extends \localzet\PSR7\Request
         if ($data !== '') {
             $this->write($data);
         }
+
+        if ((($data || $data === '0') || $this->getBody()->getSize()) && !$this->hasHeader('Content-Type')) {
+            $this->withHeader('Content-Type', 'application/x-www-form-urlencoded');
+        }
+
         if (!$this->_connection) {
             $this->connect();
         } else {
             if ($this->_connection->getStatus(false) === 'CONNECTING') {
-                $this->_connection->onConnect = array($this, 'onConnect');
+                $this->_connection->onConnect = [$this, 'onConnect'];
                 return;
             }
             $this->doSend();
@@ -307,17 +328,19 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @return bool
+     * Проверяет, можно ли записывать в этот запрос.
+     * @return bool Возвращает true, если можно записывать, иначе false.
      */
-    public function writeable()
+    public function writeable(): bool
     {
         return $this->_writeable;
     }
 
     /**
-     * @throws Throwable
+     * Отправляет этот запрос.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при отправке запроса.
      */
-    public function doSend()
+    public function doSend(): void
     {
         if (!$this->writeable()) {
             $this->emitError(new Exception('Request pending and can not send request again'));
@@ -335,7 +358,7 @@ class Request extends \localzet\PSR7\Request
         $this->_connection->send($package);
     }
 
-    public function onConnect()
+    public function onConnect(): void
     {
         try {
             $this->doSend();
@@ -345,11 +368,12 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param $connection
-     * @param $recv_buffer
-     * @throws Throwable
+     * Обрабатывает сообщение от сервера в ответ на этот запрос.
+     * @param AsyncTcpConnection $connection Соединение, через которое было получено сообщение.
+     * @param string $recv_buffer Буфер данных, полученных от сервера.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при обработке сообщения.
      */
-    public function onMessage($connection, $recv_buffer)
+    public function onMessage(AsyncTcpConnection $connection, string $recv_buffer): void
     {
         try {
             $this->_recvBuffer .= $recv_buffer;
@@ -379,10 +403,11 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param $body
-     * @throws Throwable
+     * Проверяет, завершен ли ответ на этот запрос.
+     * @param string $body Тело ответа для проверки.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при проверке завершенности.
      */
-    protected function checkComplete($body)
+    protected function checkComplete(string $body): void
     {
         $status_code = $this->_response->getStatusCode();
         $content_length = $this->_response->getHeaderLine('Content-Length');
@@ -397,14 +422,14 @@ class Request extends \localzet\PSR7\Request
         $transfer_encoding = $this->_response->getHeaderLine('Transfer-Encoding');
         // Chunked
         if ($transfer_encoding && !str_contains($transfer_encoding, 'identity')) {
-            $this->_connection->onMessage = array($this, 'handleChunkedData');
+            $this->_connection->onMessage = [$this, 'handleChunkedData'];
             $this->handleChunkedData($this->_connection, $body);
         } else {
-            $this->_connection->onMessage = array($this, 'handleData');
+            $this->_connection->onMessage = [$this, 'handleData'];
             $content_length = (int)$this->_response->getHeaderLine('Content-Length');
             if (!$content_length) {
                 // Wait close
-                $this->_connection->onClose = array($this, 'emitSuccess');
+                $this->_connection->onClose = [$this, 'emitSuccess'];
             } else {
                 $this->_expectedLength = $content_length;
             }
@@ -413,11 +438,12 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param $connection
-     * @param $data
-     * @throws Throwable
+     * Обрабатывает данные, полученные в ответ на этот запрос.
+     * @param AsyncTcpConnection $connection Соединение, через которое были получены данные.
+     * @param string $data Данные для обработки.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при обработке данных.
      */
-    public function handleData($connection, $data)
+    public function handleData(AsyncTcpConnection $connection, string $data): void
     {
         try {
             $body = $this->_response->getBody();
@@ -434,11 +460,12 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param $connection
-     * @param $buffer
-     * @throws Throwable
+     * Обрабатывает чанковые данные, полученные в ответ на этот запрос.
+     * @param AsyncTcpConnection $connection Соединение, через которое были получены данные.
+     * @param string $buffer Буфер данных для обработки.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при обработке данных.
      */
-    public function handleChunkedData($connection, $buffer)
+    public function handleChunkedData(AsyncTcpConnection $connection, string $buffer): void
     {
         try {
             if ($buffer !== '') {
@@ -487,25 +514,31 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * onError.
+     * Обрабатывает ошибку, произошедшую во время обработки этого запроса.
+     * @param AsyncTcpConnection $connection Соединение, в котором произошла ошибка.
+     * @param int $code Код ошибки.
+     * @param string $msg Сообщение об ошибке.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при обработке ошибки.
      */
-    public function onError($connection, $code, $msg)
+    public function onError(AsyncTcpConnection $connection, int $code, string $msg): void
     {
         $this->emitError(new Exception($msg, $code));
     }
 
     /**
-     * emitSuccess.
+     * Вызывает событие 'success' для этого запроса.
      */
-    public function emitSuccess()
+    public function emitSuccess(): void
     {
         $this->emit('success', $this->_response);
     }
 
     /**
-     * @throws Throwable
+     * Вызывает событие 'error' для этого запроса.
+     * @param Exception $e Исключение, которое вызвало событие 'error'.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при вызове события 'error'.
      */
-    public function emitError($e)
+    public function emitError(Exception $e): void
     {
         try {
             $this->emit('error', $e);
@@ -515,12 +548,13 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @param $request Request
-     * @param $response Response
-     * @return false|MessageInterface
-     * @throws Exception
+     * Перенаправляет этот запрос на новый URL, если ответ на этот запрос содержит заголовок 'Location'.
+     * @param Request $request Запрос для перенаправления.
+     * @param Response $response Ответ на запрос.
+     * @return false|MessageInterface Возвращает новый запрос, если перенаправление возможно, иначе false.
+     * @throws Exception Выбрасывает исключение, если происходит ошибка при перенаправлении.
      */
-    public static function redirect($request, $response)
+    public static function redirect(Request $request, Response $response): bool|MessageInterface
     {
         if (
             !str_starts_with($response->getStatusCode(), '3')
@@ -536,51 +570,51 @@ class Request extends \localzet\PSR7\Request
         );
         rewind_body($request);
 
-        $new_request = (new Request($location))->setOptions($options)->withBody($request->getBody());
-
-        return $new_request;
+        return (new Request($location))->setOptions($options)->withBody($request->getBody());
     }
 
     /**
-     * @throws Exception
+     * Проверяет, не превышено ли максимальное количество перенаправлений для этого запроса.
+     * @throws Exception Выбрасывает исключение, если превышено максимальное количество перенаправлений.
      */
-    private static function guardMax(array &$options)
+    private static function guardMax(array &$options): void
     {
         $current = $options['__redirect_count'] ?? 0;
         $options['__redirect_count'] = $current + 1;
         $max = $options['allow_redirects']['max'];
 
         if ($options['__redirect_count'] > $max) {
-            throw new Exception("Too many redirects. will not follow more than {$max} redirects");
+            throw new Exception("Too many redirects. will not follow more than $max redirects");
         }
     }
 
     /**
-     * onUnexpectClose.
+     * Обрабатывает неожиданное закрытие соединения во время обработки этого запроса.
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при обработке неожиданного закрытия.
      */
-    public function onUnexpectClose()
+    public function onUnexpectClose(): void
     {
-        $this->emitError(new Exception('Connection closed'));
+        $this->emitError(new Exception('The connection to ' . $this->_connection->getRemoteIp() . ' has been closed.'));
     }
 
     /**
-     * @return int
+     * Возвращает порт по умолчанию для этого запроса, в зависимости от схемы URI.
+     * @return int Возвращает 443, если схема URI - 'https', иначе 80.
      */
-    protected function getDefaultPort()
+    protected function getDefaultPort(): int
     {
         return ('https' === $this->getUri()->getScheme()) ? 443 : 80;
     }
 
     /**
-     * detachConnection.
-     *
+     * Отсоединяет соединение от этого запроса.
      * @return void
-     * @throws Throwable
+     * @throws Throwable Выбрасывает исключение, если происходит ошибка при отсоединении соединения.
      */
-    public function detachConnection()
+    public function detachConnection(): void
     {
         $this->cleanConnection();
-        // 不是连接池的连接则断开
+        // Соединения, которых нет в пуле соединений, отключаются.
         if ($this->_selfConnection) {
             $this->_connection->close();
             return;
@@ -589,38 +623,38 @@ class Request extends \localzet\PSR7\Request
     }
 
     /**
-     * @return AsyncTcpConnection
+     * Возвращает соединение, используемое для этого запроса.
+     * @return AsyncTcpConnection|null Возвращает соединение или null, если соединение не установлено.
      */
-    public function getConnection()
+    public function getConnection(): ?AsyncTcpConnection
     {
         return $this->_connection;
     }
 
     /**
-     * attachConnection.
-     *
-     * @param $connection AsyncTcpConnection
-     * @return $this
+     * Прикрепляет соединение к этому запросу.
+     * @param $connection AsyncTcpConnection Соединение для прикрепления.
+     * @return $this Возвращает текущий объект запроса.
      */
-    public function attachConnection($connection)
+    public function attachConnection(AsyncTcpConnection $connection): static
     {
-        $connection->onConnect = array($this, 'onConnect');
-        $connection->onMessage = array($this, 'onMessage');
-        $connection->onError = array($this, 'onError');
-        $connection->onClose = array($this, 'onUnexpectClose');
+        $connection->onConnect = [$this, 'onConnect'];
+        $connection->onMessage = [$this, 'onMessage'];
+        $connection->onError = [$this, 'onError'];
+        $connection->onClose = [$this, 'onUnexpectClose'];
         $this->_connection = $connection;
 
         return $this;
     }
 
     /**
-     * cleanConnection.
+     * Очищает соединение от этого запроса.
      */
-    protected function cleanConnection()
+    protected function cleanConnection(): void
     {
         $connection = $this->_connection;
         $connection->onConnect = $connection->onMessage = $connection->onError =
-            $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
+        $connection->onClose = $connection->onBufferFull = $connection->onBufferDrain = null;
         $this->_connection = null;
         $this->_emitter->removeAllListeners();
     }

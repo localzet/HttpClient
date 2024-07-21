@@ -54,11 +54,12 @@
       <path value="$PROJECT_DIR$/HttpClient/vendor/guzzlehttp/promises" />
       <path value="$PROJECT_DIR$/HttpClient/vendor/guzzlehttp/psr7" />
       <path value="$PROJECT_DIR$/HttpClient/vendor/guzzlehttp/guzzle" />
+      <path value="$PROJECT_DIR$/vendor/psr/http-message" />
     </include_path>
   </component>
   <component name="PhpInterpreters">
     <interpreters>
-      <interpreter id="2d37df31-60dd-4f2a-b5b1-08bfe38d86b8" name="Ubuntu" home="\\wsl$\Ubuntu/usr/bin/php" false="false" debugger_id="php.debugger.XDebug">
+      <interpreter id="2d37df31-60dd-4f2a-b5b1-08bfe38d86b8" name="Ubuntu" home="\\wsl$\Ubuntu/usr/bin/php" auto="false" debugger_id="php.debugger.XDebug">
         <remote_data INTERPRETER_PATH="/usr/bin/php" HELPERS_PATH="" VALID="true" RUN_AS_ROOT_VIA_SUDO="false" DISTRIBUTION_ID="Ubuntu" />
       </interpreter>
     </interpreters>
@@ -128,7 +129,7 @@
       </interpreter>
     </phpInfoCache>
   </component>
-  <component name="PhpProjectSharedConfiguration" php_language_level="8.2">
+  <component name="PhpProjectSharedConfiguration" php_language_level="8.1">
     <option name="suggestChangeDefaultLanguageLevel" value="false" />
   </component>
   <component name="PhpStanOptionsConfiguration">

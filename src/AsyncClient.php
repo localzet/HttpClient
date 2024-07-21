@@ -26,90 +26,107 @@
 
 namespace localzet\HTTP;
 
-use AllowDynamicProperties;
 use Exception;
 use localzet\HTTP\AsyncClient\ConnectionPool;
 use localzet\HTTP\AsyncClient\Request;
-use localzet\HTTP\AsyncClient\Response;
 use localzet\Server;
-use localzet\Server\Events\Linux;
+use localzet\Timer;
+use RuntimeException;
 use Throwable;
 
 /**
- * Class HTTP\Client
- * @package localzet\HTTP
+ * Класс AsyncClient представляет собой асинхронного клиента HTTP, который использует пул соединений для управления множественными запросами.
  */
-#[AllowDynamicProperties]
+#[\AllowDynamicProperties]
 class AsyncClient
 {
     /**
-     *
-     *[
-     *   address=>[
-     *        [
-     *        'url'=>x,
-     *        'address'=>x
-     *        'options'=>['method', 'data'=>x, 'success'=>callback, 'error'=>callback, 'headers'=>[..], 'version'=>1.1]
-     *        ],
-     *        ..
-     *   ],
-     *   ..
+     *  Очередь запросов, организованная по адресам.
+     *  Каждый адрес содержит массив запросов, каждый из которых включает URL, адрес и опции запроса.
+     * [
+     *  address => [
+     *      [
+     *          'url' => x,
+     *          'address' => x
+     *          'options' => [
+     *              'method',
+     *              'data' => x,
+     *              'success' => callback,
+     *              'error' => callback,
+     *              'headers' => [..],
+     *              'version' => 1.1
+     *          ]
+     *      ],
+     *      ..
+     *  ],
+     *  ..
      * ]
      * @var array
      */
-    protected $_queue = array();
+    protected array $_queue = [];
 
     /**
-     * @var array
+     * Пул соединений для управления активными соединениями.
+     * @var ConnectionPool|array|null
      */
-    protected $_connectionPool = null;
+    protected ConnectionPool|array|null $_connectionPool = null;
 
     /**
-     * Client constructor.
-     * @param array $options
+     * Конструктор клиента.
+     * Создает новый пул соединений и устанавливает обработчик событий 'idle' для обработки запросов, когда соединение свободно.
+     * @param array $options Опции для пула соединений.
      */
-    public function __construct($options = [])
+    public function __construct(array $options = [])
     {
         $this->_connectionPool = new ConnectionPool($options);
-        $this->_connectionPool->on('idle', array($this, 'process'));
+        $this->_connectionPool->on('idle', [$this, 'process']);
     }
 
     /**
-     * Request.
+     * Отправляет HTTP-запрос.
      *
-     * @param $url string
-     * @param array $options ['method'=>'get', 'data'=>x, 'success'=>callback, 'error'=>callback, 'headers'=>[..], 'version'=>1.1]
-     * @return mixed|Response
-     * @throws Throwable
+     * @param $url string URL-адрес для запроса.
+     * @param array $options Опции запроса, включая метод, данные, обратные вызовы успеха и ошибки, заголовки и версию.
+     * @return mixed|void Выполняет ответ на запрос или приостанавливает выполнение, если определен обратный вызов успеха и текущая среда поддерживает Unix.
+     * @throws Exception|Throwable
      */
-    public function request($url, $options = [])
+    public function request(string $url, array $options = [])
     {
-        $address = $this->parseAddress($url, $options);
         $options['url'] = $url;
-        $needSuspend = !isset($options['success']) && Server::$globalEvent instanceof Linux;
+        $needSuspend = !isset($options['success']) && is_unix();
+
+        try {
+            $address = $this->parseAddress($url);
+            $this->queuePush($address, ['url' => $url, 'address' => $address, 'options' => &$options]);
+            $this->process($address);
+        } catch (Throwable $exception) {
+            $this->deferError($options, $exception);
+            return;
+        }
+
         if ($needSuspend) {
             $suspension = Server::$globalEvent->getSuspension();
             $options['success'] = function ($response) use ($suspension) {
                 $suspension->resume($response);
             };
-        }
-        $this->queuePush($address, ['url' => $url, 'address' => $address, 'options' => $options]);
-        $this->process($address);
-        if ($needSuspend) {
+            $options['error'] = function ($response) use ($suspension) {
+                $suspension->throw($response);
+            };
+
             return $suspension->suspend();
         }
     }
 
     /**
-     * Get.
+     * Отправляет HTTP GET-запрос.
      *
-     * @param $url
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
+     * @param string $url URL-адрес для запроса.
+     * @param null $success_callback Обратный вызов, который будет вызван при успешном завершении запроса.
+     * @param null $error_callback Обратный вызов, который будет вызван при ошибке запроса.
+     * @return mixed Возвращает ответ на запрос.
+     * @throws Throwable Бросает исключение, если происходит ошибка при обработке запроса.
      */
-    public function get($url, $success_callback = null, $error_callback = null)
+    public function get(string $url, $success_callback = null, $error_callback = null): mixed
     {
         $options = [];
         if ($success_callback) {
@@ -122,16 +139,16 @@ class AsyncClient
     }
 
     /**
-     * Post.
+     * Отправляет HTTP POST-запрос.
      *
-     * @param $url
-     * @param array $data
-     * @param null $success_callback
-     * @param null $error_callback
-     * @return mixed|Response
-     * @throws Throwable
+     * @param string $url URL-адрес для запроса.
+     * @param array $data Данные для отправки в теле запроса.
+     * @param null $success_callback Обратный вызов, который будет вызван при успешном завершении запроса.
+     * @param null $error_callback Обратный вызов, который будет вызван при ошибке запроса.
+     * @return mixed Возвращает ответ на запрос.
+     * @throws Throwable Бросает исключение, если происходит ошибка при обработке запроса.
      */
-    public function post($url, $data = [], $success_callback = null, $error_callback = null)
+    public function post(string $url, array $data = [], $success_callback = null, $error_callback = null): mixed
     {
         $options = [];
         if ($data) {
@@ -148,14 +165,14 @@ class AsyncClient
     }
 
     /**
-     * Process.
-     * User should not call this.
+     * Обрабатывает очередь запросов для данного адреса.
+     * Этот метод не предназначен для вызова пользователем.
      *
-     * @param $address
+     * @param string $address Адрес для обработки.
      * @return void
-     * @throws Throwable
+     * @throws Throwable Бросает исключение, если происходит ошибка при обработке запроса.
      */
-    public function process($address)
+    public function process(string $address): void
     {
         $task = $this->queueCurrent($address);
         if (!$task) {
@@ -170,6 +187,10 @@ class AsyncClient
         if (!$connection) {
             return;
         }
+
+        $connection->errorHandler = function (Throwable $exception) use ($task) {
+            $this->deferError($task['options'], $exception);
+        };
 
         $this->queuePop($address);
         $options = $task['options'];
@@ -191,13 +212,10 @@ class AsyncClient
             try {
                 $new_request = Request::redirect($request, $response);
             } catch (Exception $exception) {
-                if (!empty($task['options']['error'])) {
-                    call_user_func($task['options']['error'], $exception);
-                } else {
-                    throw $exception;
-                }
+                $this->deferError($task['options'], $exception);
                 return;
             }
+
             // No redirect.
             if (!$new_request) {
                 if (!empty($task['options']['success'])) {
@@ -210,7 +228,7 @@ class AsyncClient
             $uri = $new_request->getUri();
             $url = (string)$uri;
             $options = $new_request->getOptions();
-            $address = $this->parseAddress($url, $options);
+            $address = $this->parseAddress($url);
             $task = [
                 'url' => $url,
                 'options' => $options,
@@ -220,11 +238,7 @@ class AsyncClient
             $this->process($address);
         })->once('error', function ($exception) use ($task, $client, $request) {
             $client->recycleConnectionFromRequest($request);
-            if (!empty($task['options']['error'])) {
-                call_user_func($task['options']['error'], $exception);
-            } else {
-                throw $exception;
-            }
+            $this->deferError($task['options'], $exception);
         });
 
         if (isset($options['progress'])) {
@@ -241,17 +255,17 @@ class AsyncClient
             return;
         }
 
-        $request->end('');
+        $request->end();
     }
 
     /**
-     * Recycle connection from request.
+     * Возвращает соединение в пул после завершения запроса.
      *
-     * @param $request Request
-     * @param null $response Response
-     * @throws Throwable
+     * @param Request $request Запрос, для которого требуется вернуть соединение.
+     * @param null $response Response Ответ на запрос.
+     * @throws Throwable Бросает исключение, если происходит ошибка при возвращении соединения.
      */
-    public function recycleConnectionFromRequest($request, $response = null)
+    public function recycleConnectionFromRequest(Request $request, $response = null): void
     {
         $connection = $request->getConnection();
         if (!$connection) {
@@ -260,41 +274,43 @@ class AsyncClient
         $connection->onConnect = $connection->onClose = $connection->onMessage = $connection->onError = null;
         $request_header_connection = strtolower($request->getHeaderLine('Connection'));
         $response_header_connection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
-        // Close Connection without header Connection: keep-alive
-        if ('keep-alive' !== $request_header_connection || 'keep-alive' !== $response_header_connection || $request->getProtocolVersion() !== '1.1') {
+
+        // Закрыть соединение без заголовка. Connection: keep-alive
+        if (
+            'keep-alive' !== $request_header_connection ||
+            'keep-alive' !== $response_header_connection ||
+            $request->getProtocolVersion() !== '1.1'
+        ) {
             $connection->close();
         }
-        $request->detachConnection($connection);
+        $request->detachConnection();
         $this->_connectionPool->recycle($connection);
     }
 
     /**
-     * Parse address from url.
+     * Разбирает адрес из URL.
      *
-     * @param $url
-     * @param $options
-     * @return string
+     * @param string $url URL для разбора.
+     * @return string Возвращает строку адреса в формате "tcp://host:port".
+     * @throws RuntimeException Выбрасывает исключение, если URL недействителен.
      */
-    protected function parseAddress($url, $options)
+    protected function parseAddress(string $url): string
     {
         $info = parse_url($url);
         if (empty($info) || !isset($info['host'])) {
-            $e = new Exception("invalid url: $url");
-            if (!empty($options['error'])) {
-                call_user_func($options['error'], $e);
-            }
+            throw new RuntimeException("invalid url: $url");
         }
         $port = $info['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
-        return "tcp://{$info['host']}:{$port}";
+        return "tcp://{$info['host']}:$port";
     }
 
     /**
-     * Queue push.
+     * Добавляет задачу в очередь для данного адреса.
      *
-     * @param $address
-     * @param $task
+     * @param string $address Адрес для добавления задачи.
+     * @param mixed $task Задача для добавления в очередь.
      */
-    protected function queuePush($address, $task)
+    protected function queuePush(string $address, mixed $task): void
     {
         if (!isset($this->_queue[$address])) {
             $this->_queue[$address] = [];
@@ -303,12 +319,12 @@ class AsyncClient
     }
 
     /**
-     * Queue unshift.
+     * Добавляет задачу в начало очереди для данного адреса.
      *
-     * @param $address
-     * @param $task
+     * @param string $address Адрес для добавления задачи.
+     * @param mixed $task Задача для добавления в очередь.
      */
-    protected function queueUnshift($address, $task)
+    protected function queueUnshift(string $address, mixed $task): void
     {
         if (!isset($this->_queue[$address])) {
             $this->_queue[$address] = [];
@@ -317,12 +333,12 @@ class AsyncClient
     }
 
     /**
-     * Queue current item.
+     * Получает текущую задачу из очереди для данного адреса.
      *
-     * @param $address
-     * @return mixed|null
+     * @param string $address Адрес для получения текущей задачи.
+     * @return mixed|null Возвращает текущую задачу или null, если очередь пуста.
      */
-    protected function queueCurrent($address)
+    protected function queueCurrent(string $address): mixed
     {
         if (empty($this->_queue[$address])) {
             return null;
@@ -332,15 +348,35 @@ class AsyncClient
     }
 
     /**
-     * Queue pop.
+     * Удаляет текущую задачу из очереди для данного адреса.
      *
-     * @param $address
+     * @param string $address Адрес для удаления текущей задачи.
      */
-    protected function queuePop($address)
+    protected function queuePop(string $address): void
     {
         unset($this->_queue[$address][key($this->_queue[$address])]);
         if (empty($this->_queue[$address])) {
             unset($this->_queue[$address]);
+        }
+    }
+
+    /**
+     * Откладывает обработку ошибки, вызывая обратный вызов ошибки или выбрасывая исключение.
+     *
+     * @param array $options Опции запроса, включающие обратные вызовы успеха и ошибки.
+     * @param Throwable $exception Исключение для обработки.
+     * @return void
+     * @throws Throwable Выбрасывает исключение, если обратный вызов ошибки не определен и текущая среда поддерживает Unix.
+     */
+    protected function deferError(array $options, Throwable $exception): void
+    {
+        if (isset($options['error'])) {
+            Timer::add(0.000001, $options['error'], [$exception], false);
+            return;
+        }
+        $needSuspend = !isset($options['success']) && is_unix();
+        if ($needSuspend) {
+            throw $exception;
         }
     }
 }
