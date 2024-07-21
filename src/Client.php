@@ -29,6 +29,8 @@ namespace localzet\HTTP;
 
 /**
  * FrameX default Http client
+ * @deprecated Устарел и будет удалён в версии ^2.0
+ * @see AsyncClient
  */
 class Client
 {
