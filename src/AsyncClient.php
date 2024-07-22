@@ -272,13 +272,13 @@ class AsyncClient
             return;
         }
         $connection->onConnect = $connection->onClose = $connection->onMessage = $connection->onError = null;
-        $request_header_connection = strtolower($request->getHeaderLine('Connection'));
-        $response_header_connection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
+        $requestHeaderConnection = strtolower($request->getHeaderLine('Connection'));
+        $responseHeaderConnection = $response ? strtolower($response->getHeaderLine('Connection')) : '';
 
         // Закрыть соединение без заголовка. Connection: keep-alive
         if (
-            'keep-alive' !== $request_header_connection ||
-            'keep-alive' !== $response_header_connection ||
+            'keep-alive' !== $requestHeaderConnection ||
+            'keep-alive' !== $responseHeaderConnection ||
             $request->getProtocolVersion() !== '1.1'
         ) {
             $connection->close();
@@ -297,7 +297,7 @@ class AsyncClient
     protected function parseAddress(string $url): string
     {
         $info = parse_url($url);
-        if (empty($info) || !isset($info['host'])) {
+        if (!isset($info['host'])) {
             throw new RuntimeException("invalid url: $url");
         }
         $port = $info['port'] ?? (str_starts_with($url, 'https') ? 443 : 80);
