@@ -23,7 +23,7 @@
  *              For any questions, please contact <creator@localzet.com>
  */
 
-namespace localzet\HTTP\AsyncClient;
+namespace localzet\HTTP\Client;
 
 class Emitter
 {

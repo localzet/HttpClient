@@ -2,7 +2,6 @@
 
 namespace localzet\HTTP;
 
-use Exception;
 use localzet\Server;
 use RuntimeException;
 use Throwable;
@@ -44,7 +43,7 @@ class ParallelClient extends Client
      *
      * @param bool $errorThrow Если true, то при ошибке будет выброшено исключение.
      * @return array Возвращает массив результатов запросов.
-     * @throws RuntimeException Выбрасывает исключение, если текущая среда не поддерживает Unix.
+     * @throws RuntimeException|Throwable Выбрасывает исключение, если текущая среда не поддерживает Unix.
      */
     public function await(bool $errorThrow = false): array
     {
@@ -103,11 +102,11 @@ class ParallelClient extends Client
      * Откладывает обработку ошибки, вызывая обратный вызов ошибки.
      *
      * @param array $options Опции запроса, включающие обратные вызовы успеха и ошибки.
-     * @param Exception $exception Исключение для обработки.
+     * @param Throwable $exception Исключение для обработки.
      * @return void
      */
     #[\Override]
-    protected function deferError(array $options, Exception $exception): void
+    protected function deferError(array $options, Throwable $exception): void
     {
         if (!empty($options['error'])) {
             call_user_func($options['error'], $exception);

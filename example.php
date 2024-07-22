@@ -23,7 +23,7 @@
  *              For any questions, please contact <creator@localzet.com>
  */
 
-use localzet\HTTP\AsyncClient;
+use localzet\HTTP\Client;
 
 require __DIR__ . '/vendor/autoload.php';
 
@@ -34,7 +34,7 @@ $options = [
     'timeout' => 30,                // Ожидание между запросами
 ];
 
-$http = new AsyncClient($options);
+$http = new Client($options);
 
 /**
  * $http->get() принимает 3 аргумента:

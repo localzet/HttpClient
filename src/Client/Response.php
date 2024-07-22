@@ -23,7 +23,7 @@
  *              For any questions, please contact <creator@localzet.com>
  */
 
-namespace localzet\HTTP\AsyncClient;
+namespace localzet\HTTP\Client;
 
 /**
  * Класс Response представляет собой ответ на асинхронный HTTP-запрос. Он наследует от базового класса Response в PSR7.
