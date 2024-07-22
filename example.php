@@ -42,13 +42,12 @@ $http = new Client($options);
  * 2. Callback при удачном запросе
  * 3. Callback при ошибке
  */
-$http->get(
-    'https://example.com/',
-    function ($response) {
+$http->get('https://example.com/',
+    success: function ($response) {
         var_dump($response->getStatusCode());
         echo $response->getBody();
     },
-    function ($exception) {
+    error: function ($exception) {
         echo $exception;
     }
 );
@@ -60,38 +59,36 @@ $http->get(
  * 3. Callback при удачном запросе
  * 4. Callback при ошибке
  */
-$http->post(
-    'https://example.com/',
-    ['key1' => 'value1', 'key2' => 'value2'],
-    function ($response) {
+$http->post('https://example.com/', ['key1' => 'value1', 'key2' => 'value2'],
+    success: function ($response) {
         var_dump($response->getStatusCode());
         echo $response->getBody();
     },
-    function ($exception) {
+    error: function ($exception) {
         echo $exception;
     }
 );
 
 
 /**
- * $http->request() принимает 2 аргумента:
+ * $http->request() принимает аргументы:
  * 1. URL
- * 2. Опции [
- *      method,     Метод
+ * 2. method,     Метод
+ * 3. data,       Параметры (вне зависимости от метода, работает http_build_query())
+ * 4. headers,    Массив заголовков
+ * 5. options [
  *      version,    Версия HTTP
- *      headers,    Массив заголовков
- *      data,       Параметры (вне зависимости от метода, работает http_build_query())
  *      success,    Callback при удачном запросе
  *      error       Callback при ошибке
  *  ]
  */
 $http->request(
     'https://example.com/',
+    'POST',
+    ['key1' => 'value1', 'key2' => 'value2'],
+    ['Connection' => 'keep-alive'],
     [
-        'method' => 'POST',
         'version' => '1.1',
-        'headers' => ['Connection' => 'keep-alive'],
-        'data' => ['key1' => 'value1', 'key2' => 'value2'],
         'success' => function ($response) {
             echo $response->getBody();
         },

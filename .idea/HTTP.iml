@@ -3,7 +3,6 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/vendor/composer" />
-      <excludeFolder url="file://$MODULE_DIR$/vendor/localzet/psr" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/localzet/psr7" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/localzet/server" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/http-message" />

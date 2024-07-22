@@ -28,11 +28,11 @@ namespace localzet\HTTP\Client;
 
 use Exception;
 use InvalidArgumentException;
-use localzet\PSR\Http\Message\MessageInterface;
 use localzet\PSR7\MultipartStream;
 use localzet\PSR7\Uri;
 use localzet\PSR7\UriResolver;
 use localzet\Server\Connection\AsyncTcpConnection;
+use Psr\Http\Message\MessageInterface;
 use Throwable;
 use function localzet\PSR7\_parse_message;
 use function localzet\PSR7\rewind_body;

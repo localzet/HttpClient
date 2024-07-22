@@ -128,23 +128,23 @@ class Client
      *
      * @param string $url URL-адрес для запроса.
      * @param array $headers Заголовки для запроса.
-     * @param null $success_callback Обратный вызов, который будет вызван при успешном завершении запроса.
-     * @param null $error_callback Обратный вызов, который будет вызван при ошибке запроса.
+     * @param null $success Обратный вызов, который будет вызван при успешном завершении запроса.
+     * @param null $error Обратный вызов, который будет вызван при ошибке запроса.
      * @return mixed Возвращает ответ на запрос.
      * @throws Throwable Бросает исключение, если происходит ошибка при обработке запроса.
      */
-    public function get(string $url, array $headers = [], $success_callback = null, $error_callback = null): mixed
+    public function get(string $url, array $headers = [], $success = null, $error = null): mixed
     {
         $options = [];
         $options['method'] = 'GET';
         if ($headers) {
             $options['headers'] = $headers;
         }
-        if ($success_callback) {
-            $options['success'] = $success_callback;
+        if ($success) {
+            $options['success'] = $success;
         }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
+        if ($error) {
+            $options['error'] = $error;
         }
 
         return $this->request($url, 'GET', [], $headers, $options);
@@ -156,12 +156,12 @@ class Client
      * @param string $url URL-адрес для запроса.
      * @param array $data Данные для отправки в теле запроса.
      * @param array $headers Заголовки для запроса.
-     * @param null $success_callback Обратный вызов, который будет вызван при успешном завершении запроса.
-     * @param null $error_callback Обратный вызов, который будет вызван при ошибке запроса.
+     * @param null $success Обратный вызов, который будет вызван при успешном завершении запроса.
+     * @param null $error Обратный вызов, который будет вызван при ошибке запроса.
      * @return mixed Возвращает ответ на запрос.
      * @throws Throwable Бросает исключение, если происходит ошибка при обработке запроса.
      */
-    public function post(string $url, array $data = [], array $headers = [], $success_callback = null, $error_callback = null): mixed
+    public function post(string $url, array $data = [], array $headers = [], $success = null, $error = null): mixed
     {
         $options = [];
         $options['method'] = 'POST';
@@ -171,11 +171,11 @@ class Client
         if ($headers) {
             $options['headers'] = $headers;
         }
-        if ($success_callback) {
-            $options['success'] = $success_callback;
+        if ($success) {
+            $options['success'] = $success;
         }
-        if ($error_callback) {
-            $options['error'] = $error_callback;
+        if ($error) {
+            $options['error'] = $error;
         }
 
         return $this->request($url, 'POST', $data, $headers, $options);
