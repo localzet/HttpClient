@@ -29,6 +29,7 @@ namespace localzet\HTTP;
 use Exception;
 use localzet\HTTP\Client\ConnectionPool;
 use localzet\HTTP\Client\Request;
+use localzet\HTTP\Client\Response;
 use localzet\Server;
 use localzet\Timer;
 use RuntimeException;
@@ -90,7 +91,7 @@ class Client
      * @param array $data Данные для отправки в теле запроса.
      * @param array $headers Заголовки для запроса.
      * @param array $options Опции запроса, включая метод, данные, обратные вызовы успеха и ошибки, заголовки и версию.
-     * @return mixed|void Выполняет ответ на запрос или приостанавливает выполнение, если определен обратный вызов успеха и текущая среда поддерживает Unix.
+     * @return Response|void Выполняет ответ на запрос или приостанавливает выполнение, если определен обратный вызов успеха и текущая среда поддерживает Unix.
      * @throws Throwable
      */
     public function request(string $url, string $method = 'GET', array $data = [], array $headers = [], array $options = [])
@@ -100,6 +101,19 @@ class Client
         $options['data'] = $data;
         $options['headers'] = $headers;
         $needSuspend = !isset($options['success']) && is_unix();
+
+        if ($needSuspend) {
+            $suspension = Server::$globalEvent->getSuspension();
+            $options['success'] = function ($response) use ($suspension) {
+                $suspension->resume($response);
+            };
+
+            if (!isset($options['error'])) {
+                $options['error'] = function ($response) use ($suspension) {
+                    $suspension->throw($response);
+                };
+            }
+        }
 
         try {
             $address = $this->parseAddress($url);
@@ -111,14 +125,6 @@ class Client
         }
 
         if ($needSuspend) {
-            $suspension = Server::$globalEvent->getSuspension();
-            $options['success'] = function ($response) use ($suspension) {
-                $suspension->resume($response);
-            };
-            $options['error'] = function ($response) use ($suspension) {
-                $suspension->throw($response);
-            };
-
             return $suspension->suspend();
         }
     }

@@ -107,8 +107,6 @@ class Request extends \localzet\PSR7\Request
             'Accept' => '*/*',
             'Cache-Control' => 'max-age=0',
             'Connection' => 'keep-alive',
-            'Expect' => '',
-            'Pragma' => '',
         ],
         'allow_redirects' => [
             'max' => 5

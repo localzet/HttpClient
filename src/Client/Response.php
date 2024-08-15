@@ -31,5 +31,8 @@ namespace localzet\HTTP\Client;
 #[\AllowDynamicProperties]
 class Response extends \localzet\PSR7\Response
 {
-
+    public function __toString()
+    {
+        return (string) parent::getBody();
+    }
 }
