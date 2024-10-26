@@ -102,19 +102,6 @@ class Client
         $options['headers'] = $headers;
         $needSuspend = !isset($options['success']) && is_unix();
 
-        if ($needSuspend) {
-            $suspension = Server::$globalEvent->getSuspension();
-            $options['success'] = function ($response) use ($suspension) {
-                $suspension->resume($response);
-            };
-
-            if (!isset($options['error'])) {
-                $options['error'] = function ($response) use ($suspension) {
-                    $suspension->throw($response);
-                };
-            }
-        }
-
         try {
             $address = $this->parseAddress($url);
             $this->queuePush($address, ['url' => $url, 'address' => $address, 'options' => &$options]);
@@ -125,6 +112,12 @@ class Client
         }
 
         if ($needSuspend) {
+            $suspension = Server::$globalEvent->getSuspension();
+            $options['success'] = fn($response) => $suspension->resume($response);
+
+            if (!isset($options['error'])) {
+                $options['error'] = fn($response) => $suspension->throw($response);
+            }
             return $suspension->suspend();
         }
     }

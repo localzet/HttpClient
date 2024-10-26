@@ -250,7 +250,7 @@ class Request extends \localzet\PSR7\Request
      * @return $this Возвращает текущий объект запроса.
      * @throws Throwable Выбрасывает исключение, если происходит ошибка при записи данных.
      */
-    public function write(string $data = ''): static
+    public function write(mixed $data = ''): static
     {
         if (!$this->writeable()) {
             $this->emitError(new Exception('Request pending and can not send request again'));
