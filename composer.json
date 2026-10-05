@@ -1,6 +1,6 @@
 {
   "name": "localzet/http",
-  "description": "Localzet HTTP Client is a library for making HTTP requests. It is developed by Ivan Zorin and uses modern technologies and standards for efficient and reliable HTTP communication.",
+  "description": "Asynchronous HTTP requests and connection pooling for Localzet Server.",
   "type": "library",
   "keywords": [
     "HTTP",
