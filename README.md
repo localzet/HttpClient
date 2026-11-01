@@ -8,7 +8,7 @@ Asynchronous HTTP requests and connection pooling for Localzet Server.
 
 The current client class is localzet\HTTP\Client, not AsyncClient. Installation and syntax have been checked; redirects, TLS verification, streaming, cancellation and connection-pool lifecycle need integration tests.
 
-This is a Server 4.x component; Server 7.x compatibility is not established.
+This release targets Localzet Server 7.x.
 
 ## Dependencies
 

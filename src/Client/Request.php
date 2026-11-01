@@ -1,11 +1,11 @@
 <?php
 
 /**
- * @package     HTTP Client
+ * @package     Localzet HTTP Client
  * @link        https://github.com/localzet/HttpClient
  *
  * @author      Ivan Zorin <creator@localzet.com>
- * @copyright   Copyright (c) 2018-2024 Zorin Projects S.P.
+ * @copyright   Copyright © 2016-2026 Localzet Group. All rights reserved.
  * @license     https://www.gnu.org/licenses/agpl-3.0 GNU Affero General Public License v3.0
  *
  *              This program is free software: you can redistribute it and/or modify
@@ -15,14 +15,14 @@
  *
  *              This program is distributed in the hope that it will be useful,
  *              but WITHOUT ANY WARRANTY; without even the implied warranty of
- *              MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *              MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *              GNU Affero General Public License for more details.
  *
  *              You should have received a copy of the GNU Affero General Public License
- *              along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *              along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
  *              For any questions, please contact <creator@localzet.com>
- */
+*/
 
 namespace localzet\HTTP\Client;
 
