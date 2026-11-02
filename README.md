@@ -25,7 +25,7 @@ This release targets Localzet Server 7.x.
 composer require localzet/http:dev-main
 ```
 
-The current source branch targets Server 7. The published stable tag `v2.0.2` targets Server 4.2; do not install that tag alongside this source checkout.
+The upcoming 3.x release targets Server 7 and PSR-7 4. The published stable tag `v2.0.2` targets Server 4.2 and PSR-7 3; upgrade the Server and PSR-7 packages together.
 
 ## Development checks
 

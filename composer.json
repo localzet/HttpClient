@@ -33,7 +33,7 @@
     "ext-curl": "*",
     "ext-json": "*",
     "localzet/server": "^7.0",
-    "localzet/psr7": "^3.0",
+    "localzet/psr7": "^4.0",
     "psr/http-message": "^2.0"
   },
   "autoload": {
