@@ -29,7 +29,7 @@
     "source": "https://github.com/localzet/HttpClient"
   },
   "require": {
-    "php": "^8.0",
+    "php": "^8.2",
     "ext-curl": "*",
     "ext-json": "*",
     "localzet/server": "^7.0",
@@ -40,5 +40,9 @@
     "psr-4": {
       "localzet\\HTTP\\": "src/"
     }
+  },
+  "scripts": {
+    "test": "php tests/regression.php",
+    "lint": "find . -name '*.php' -not -path './vendor/*' -print0 | xargs -0 -n1 php -l"
   }
 }

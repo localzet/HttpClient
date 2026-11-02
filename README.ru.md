@@ -12,18 +12,20 @@
 
 ## Зависимости
 
-- `php`: `^8.0`
+- `php`: `^8.2`
 - `ext-curl`: `*`
 - `ext-json`: `*`
-- `localzet/server`: `^4.2`
+- `localzet/server`: `^7.0`
 - `localzet/psr7`: `^3.0`
 - `psr/http-message`: `^2.0`
 
 ## Установка
 
 ```sh
-composer require localzet/http
+composer require localzet/http:dev-main
 ```
+
+Текущая исходная ветка требует Server 7. Публичный стабильный tag `v2.0.2` рассчитан на Server 4.2; не устанавливайте его вместе с этим исходным кодом.
 
 ## Проверки разработки
 

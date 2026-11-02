@@ -12,18 +12,20 @@ This release targets Localzet Server 7.x.
 
 ## Dependencies
 
-- `php`: `^8.0`
+- `php`: `^8.2`
 - `ext-curl`: `*`
 - `ext-json`: `*`
-- `localzet/server`: `^4.2`
+- `localzet/server`: `^7.0`
 - `localzet/psr7`: `^3.0`
 - `psr/http-message`: `^2.0`
 
 ## Installation
 
 ```sh
-composer require localzet/http
+composer require localzet/http:dev-main
 ```
+
+The current source branch targets Server 7. The published stable tag `v2.0.2` targets Server 4.2; do not install that tag alongside this source checkout.
 
 ## Development checks
 
