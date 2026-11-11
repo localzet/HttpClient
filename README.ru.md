@@ -6,9 +6,9 @@
 
 ## Состояние и совместимость
 
-Текущий класс клиента — localzet\HTTP\Client, а не AsyncClient. Проверены установка и синтаксис; редиректы, проверка TLS, потоковая передача, отмена запросов и жизненный цикл пула требуют интеграционных тестов.
+Текущий класс клиента — `localzet\HTTP\Client`. Unit-тесты проверяют объединение параметров, а loopback integration test — асинхронное соединение с отложенной отправкой и получение ответа. Текущий набор интеграционных тестов не проверяет редиректы, TLS, потоковую передачу, отмену запросов и жизненный цикл пула.
 
-Эта версия рассчитана на Localzet Server 7.x.
+Тег `v3.0.0` рассчитан на Localzet Server 7 и PSR-7 4. Более старый тег `v2.0.2` рассчитан на Server 4.2 и PSR-7 3.
 
 ## Зависимости
 
@@ -16,16 +16,16 @@
 - `ext-curl`: `*`
 - `ext-json`: `*`
 - `localzet/server`: `^7.0`
-- `localzet/psr7`: `^3.0`
+- `localzet/psr7`: `^4.0`
 - `psr/http-message`: `^2.0`
 
 ## Установка
 
 ```sh
-composer require localzet/http:dev-main
+composer require localzet/http:^3.0
 ```
 
-Следующий выпуск 3.x рассчитан на Server 7 и PSR-7 4. Опубликованный стабильный тег `v2.0.2` рассчитан на Server 4.2 и PSR-7 3; обновляйте Server и PSR-7 одновременно.
+Выбирайте версии под установленный Server: `localzet/http:^3.0` вместе с Server 7 и PSR-7 4 либо `localzet/http:^2.0` вместе с Server 4.2 и PSR-7 3. Обновляйте эти пакеты согласованно.
 
 ## Проверки разработки
 
@@ -34,9 +34,11 @@ composer validate --strict
 composer install
 composer dump-autoload --optimize --strict-psr
 composer audit
+composer run test
+composer run test:integration
 ```
 
-Установка, lint и автозагрузка не подтверждают сквозное поведение или готовность к эксплуатации.
+Integration-команда запускает локальную HTTP-заглушку; она не подтверждает работу TLS или готовность к эксплуатации.
 
 [Исторические примеры](docs/legacy-readme.md) нужно сверять с текущим API.
 

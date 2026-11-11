@@ -27,3 +27,4 @@ jobs:
       - run: composer install --no-interaction --prefer-dist
       - run: composer run lint
       - run: composer run test
+      - run: composer run test:integration
