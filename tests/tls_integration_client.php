@@ -19,11 +19,15 @@ use localzet\Server;
 $port = (int)($argv[1] ?? 0);
 $mode = $argv[2] ?? '';
 $certificate = $argv[3] ?? '';
-$host = $mode === 'reject-hostname' ? '127.0.0.1' : 'localhost';
+$host = '127.0.0.1';
 $options = ['connect_timeout' => 2, 'timeout' => 3];
 
 if ($mode !== 'reject-untrusted') {
-    $options['context'] = ['ssl' => ['cafile' => $certificate]];
+    $sslOptions = ['cafile' => $certificate];
+    if ($mode === 'reject-hostname') {
+        $sslOptions['peer_name'] = 'wrong.localhost';
+    }
+    $options['context'] = ['ssl' => $sslOptions];
 }
 
 $loop = Server::getEventLoop();

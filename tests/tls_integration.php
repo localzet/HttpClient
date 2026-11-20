@@ -41,6 +41,7 @@ subjectAltName = @names
 
 [names]
 DNS.1 = localhost
+IP.1 = 127.0.0.1
 CONFIG;
 
 file_put_contents($configurationPath, $configuration);
