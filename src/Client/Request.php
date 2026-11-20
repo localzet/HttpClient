@@ -33,6 +33,7 @@ use localzet\PSR7\Uri;
 use localzet\PSR7\UriResolver;
 use localzet\Server\Connection\AsyncTcpConnection;
 use Psr\Http\Message\MessageInterface;
+use Psr\Http\Message\UriInterface;
 use Throwable;
 use function localzet\PSR7\_parse_message;
 use function localzet\PSR7\rewind_body;
@@ -573,9 +574,45 @@ class Request extends \localzet\PSR7\Request
             $request->getUri(),
             new Uri($response->getHeaderLine('Location'))
         );
+        if (!self::hasSameOrigin($request->getUri(), $location)) {
+            $options['headers'] = self::withoutSensitiveHeaders($options['headers'] ?? []);
+        }
         rewind_body($request);
 
         return (new Request($location))->setOptions($options)->withBody($request->getBody());
+    }
+
+    private static function hasSameOrigin(UriInterface $source, UriInterface $target): bool
+    {
+        return strtolower($source->getScheme()) === strtolower($target->getScheme())
+            && strtolower($source->getHost()) === strtolower($target->getHost())
+            && self::effectivePort($source) === self::effectivePort($target);
+    }
+
+    private static function effectivePort(UriInterface $uri): ?int
+    {
+        if ($uri->getPort() !== null) {
+            return $uri->getPort();
+        }
+
+        return match (strtolower($uri->getScheme())) {
+            'http' => 80,
+            'https' => 443,
+            default => null,
+        };
+    }
+
+    private static function withoutSensitiveHeaders(array $headers): array
+    {
+        $sensitiveHeaders = ['authorization', 'cookie', 'proxy-authorization'];
+
+        foreach ($headers as $name => $_value) {
+            if (in_array(strtolower((string)$name), $sensitiveHeaders, true)) {
+                unset($headers[$name]);
+            }
+        }
+
+        return $headers;
     }
 
     /**

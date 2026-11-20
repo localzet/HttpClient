@@ -232,13 +232,13 @@ class ConnectionPool extends Emitter
     {
         $context = [
             'ssl' => [
-                'verify_peer' => false,
-                'verify_peer_name' => false,
-                'allow_self_signed' => true
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'allow_self_signed' => false
             ]
         ];
         if (!empty($this->_options['context'])) {
-            $context = $this->_options['context'];
+            $context = array_replace_recursive($context, $this->_options['context']);
         }
         if (!$ssl) {
             unset($context['ssl']);

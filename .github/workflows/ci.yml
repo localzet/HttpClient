@@ -22,9 +22,11 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-          extensions: curl
+          extensions: curl, openssl
       - run: composer validate --strict --no-check-lock
       - run: composer install --no-interaction --prefer-dist
+      - run: composer audit --abandoned=report
       - run: composer run lint
       - run: composer run test
       - run: composer run test:integration
+      - run: composer run test:tls
