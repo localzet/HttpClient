@@ -23,6 +23,7 @@ if (!mkdir($directory, 0700)) {
 $configurationPath = $directory . '/openssl.cnf';
 $certificatePath = $directory . '/certificate.pem';
 $privateKeyPath = $directory . '/private-key.pem';
+$readyPath = $directory . '/ready';
 $configuration = <<<'CONFIG'
 [req]
 prompt = no
@@ -75,7 +76,7 @@ try {
     $port = (int)substr((string)$address, strrpos((string)$address, ':') + 1);
 
     $server = proc_open(
-        [PHP_BINARY, __DIR__ . '/tls_fixture.php', (string)$port, $certificatePath, $privateKeyPath],
+        [PHP_BINARY, __DIR__ . '/tls_fixture.php', (string)$port, $certificatePath, $privateKeyPath, $readyPath],
         [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
         $serverPipes,
         dirname(__DIR__)
@@ -89,17 +90,10 @@ try {
 
     try {
         $deadline = microtime(true) + 5;
-        $ready = false;
-        while (microtime(true) < $deadline) {
-            $socket = @fsockopen('127.0.0.1', $port, $errno, $errorMessage, 0.1);
-            if (is_resource($socket)) {
-                fclose($socket);
-                $ready = true;
-                break;
-            }
+        while (microtime(true) < $deadline && !is_file($readyPath)) {
             usleep(20_000);
         }
-        if (!$ready) {
+        if (!is_file($readyPath)) {
             $fixtureError = stream_get_contents($serverPipes[2]);
             throw new RuntimeException('Loopback TLS fixture did not start: ' . trim((string)$fixtureError));
         }
@@ -133,7 +127,7 @@ try {
         proc_close($server);
     }
 } finally {
-    foreach ([$configurationPath, $certificatePath, $privateKeyPath] as $path) {
+    foreach ([$configurationPath, $certificatePath, $privateKeyPath, $readyPath] as $path) {
         if (is_file($path)) {
             unlink($path);
         }

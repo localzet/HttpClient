@@ -14,6 +14,7 @@ declare(strict_types=1);
 $port = (int)($argv[1] ?? 0);
 $certificate = $argv[2] ?? '';
 $privateKey = $argv[3] ?? '';
+$readyPath = $argv[4] ?? '';
 $context = stream_context_create([
     'ssl' => [
         'local_cert' => $certificate,
@@ -33,6 +34,7 @@ if (!is_resource($server)) {
     fwrite(STDERR, "Cannot start TLS fixture: {$errorMessage}\n");
     exit(1);
 }
+file_put_contents($readyPath, 'ready');
 
 while (true) {
     $connection = @stream_socket_accept($server, 1);
